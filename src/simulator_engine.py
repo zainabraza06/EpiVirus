@@ -762,99 +762,99 @@ class UltimateSimulator:
         self.stats['hospital_bed_usage'].append(hospitalized)
     
     # ==================== ANALYSIS METHODS ====================
-    # Add to UltimateSimulator class in simulator_engine.py
-
-def run_with_animation(self, days=100, save_checkpoints=True, checkpoint_interval=5):
-    """
-    Run simulation while saving states for animation
     
-    Args:
-        days: Number of days to simulate
-        save_checkpoints: Save state at intervals
-        checkpoint_interval: Days between saved states
+    def run_with_animation(self, days=100, save_checkpoints=True, checkpoint_interval=5):
+        """
+        Run simulation while saving states for animation
         
-    Returns:
-        history and checkpoints for animation
-    """
-    print(f"🎬 Running simulation with animation checkpoints...")
-    
-    # Initialize checkpoints
-    self.checkpoints = {}
-    
-    # Save initial state
-    if save_checkpoints:
-        self._save_checkpoint(0)
-    
-    # Run simulation with periodic saving
-    for day in range(days):
-        self.step(1)
+        Args:
+            days: Number of days to simulate
+            save_checkpoints: Save state at intervals
+            checkpoint_interval: Days between saved states
+            
+        Returns:
+            history and checkpoints for animation
+        """
+        print(f"🎬 Running simulation with animation checkpoints...")
         
-        # Save checkpoint at intervals
-        if save_checkpoints and (day % checkpoint_interval == 0 or day == days - 1):
-            self._save_checkpoint(self.time)
+        # Initialize checkpoints
+        self.checkpoints = {}
         
-        # Progress indicator
-        if day % 10 == 0:
-            infectious = len(self.state_sets['I'])
-            print(f"  Day {day}: {infectious} infectious individuals")
+        # Save initial state
+        if save_checkpoints:
+            self._save_checkpoint(0)
+        
+        # Run simulation with periodic saving
+        for day in range(days):
+            self.step(1)
+            
+            # Save checkpoint at intervals
+            if save_checkpoints and (day % checkpoint_interval == 0 or day == days - 1):
+                self._save_checkpoint(self.time)
+            
+            # Progress indicator
+            if day % 10 == 0:
+                infectious = len(self.state_sets['I'])
+                print(f"  Day {day}: {infectious} infectious individuals")
+        
+        print(f"✅ Simulation complete with {len(self.checkpoints)} animation checkpoints")
+        return self.history, self.checkpoints
     
-    print(f"✅ Simulation complete with {len(self.checkpoints)} animation checkpoints")
-    return self.history, self.checkpoints
-
-def _save_checkpoint(self, day):
-    """Save simulation state for animation"""
-    # Save node states
-    node_states = {}
-    for node in self.G.nodes():
-        node_states[node] = self.G.nodes[node].get('state', 'S')
+    def _save_checkpoint(self, day):
+        """Save simulation state for animation"""
+        # Save node states
+        node_states = {}
+        for node in self.G.nodes():
+            node_states[node] = self.G.nodes[node].get('state', 'S')
+        
+        # Save current statistics
+        stats = {
+            'S': len(self.state_sets['S']),
+            'E': len(self.state_sets['E']),
+            'I': len(self.state_sets['I']),
+            'R': len(self.state_sets['R']),
+            'D': len(self.state_sets['D']),
+            'V': len(self.state_sets.get('V', set()))
+        }
+        
+        self.checkpoints[day] = {
+            'node_states': node_states,
+            'statistics': stats,
+            'time': day
+        }
     
-    # Save current statistics
-    stats = {
-        'S': len(self.state_sets['S']),
-        'E': len(self.state_sets['E']),
-        'I': len(self.state_sets['I']),
-        'R': len(self.state_sets['R']),
-        'D': len(self.state_sets['D']),
-        'V': len(self.state_sets.get('V', set()))
-    }
+    def restore_from_checkpoint(self, day):
+        """Restore simulation state from checkpoint"""
+        if day not in self.checkpoints:
+            print(f"⚠️ No checkpoint for day {day}")
+            return
+        
+        checkpoint = self.checkpoints[day]
+        
+        # Restore node states
+        for node, state in checkpoint['node_states'].items():
+            self.G.nodes[node]['state'] = state
+        
+        # Restore state sets
+        self._rebuild_state_sets()
+        
+        # Restore time
+        self.time = day
+        
+        print(f"✅ Restored simulation to day {day}")
     
-    self.checkpoints[day] = {
-        'node_states': node_states,
-        'statistics': stats,
-        'time': day
-    }
-
-def restore_from_checkpoint(self, day):
-    """Restore simulation state from checkpoint"""
-    if day not in self.checkpoints:
-        print(f"⚠️ No checkpoint for day {day}")
-        return
+    def _rebuild_state_sets(self):
+        """Rebuild state sets from node states"""
+        # Clear existing sets
+        for state_set in self.state_sets.values():
+            state_set.clear()
+        
+        # Rebuild from node states
+        for node in self.G.nodes():
+            state = self.G.nodes[node].get('state', 'S')
+            if state in self.state_sets:
+                self.state_sets[state].add(node)
     
-    checkpoint = self.checkpoints[day]
-    
-    # Restore node states
-    for node, state in checkpoint['node_states'].items():
-        self.G.nodes[node]['state'] = state
-    
-    # Restore state sets
-    self._rebuild_state_sets()
-    
-    # Restore time
-    self.time = day
-    
-    print(f"✅ Restored simulation to day {day}")
-
-def _rebuild_state_sets(self):
-    """Rebuild state sets from node states"""
-    # Clear existing sets
-    for state_set in self.state_sets.values():
-        state_set.clear()
-    
-    # Rebuild from node states
-    for node in self.G.nodes():
-        state = self.G.nodes[node].get('state', 'S')
-        if state in self.state_sets:
-            self.state_sets[state].add(node)
     def get_summary_stats(self):
         """Get comprehensive statistics"""
         return {
@@ -981,7 +981,6 @@ def _rebuild_state_sets(self):
         
         print(f"💾 Simulation saved to {filename}")
     
-    
     @classmethod
     def load_simulation(cls, filename):
         """Load simulation from file"""
@@ -1001,10 +1000,7 @@ def _rebuild_state_sets(self):
         print(f"📂 Simulation loaded from {filename}")
         return simulator
     
-
-   
-
-# ==================== MAIN SIMULATION FUNCTION ====================
+    # ==================== MAIN SIMULATION FUNCTION ====================
 
 def run_complete_simulation(
     population=1000,

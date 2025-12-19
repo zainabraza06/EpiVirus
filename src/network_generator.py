@@ -6,24 +6,21 @@ import random
 from typing import Optional, Dict, List
 
 class UltimateNetworkGenerator:
-    """Generates social networks with optional real-world data integration"""
+   
     
     def __init__(self, population=2000, dataset_csv: Optional[str] = None):
-        """
-        population: number of nodes (people)
-        dataset_csv: path to Kaggle/real dataset CSV (optional)
-        """
+       
         self.population = population
         self.dataset_csv = dataset_csv
         self.real_data = None
         if self.dataset_csv:
             self.load_dataset(self.dataset_csv)
     
-    # ==================== LOAD REAL DATA ====================
+    # LOAD REAL DATA
     def load_dataset(self, csv_path: str):
         """Load Kaggle dataset for nodes and edges"""
         self.real_data = pd.read_csv(csv_path)
-        print(f"✅ Loaded dataset with {len(self.real_data)} rows")
+        print(f" Loaded dataset with {len(self.real_data)} rows")
     
     # ==================== BASE NETWORK MODELS ====================
     def erdos_renyi(self, p=0.01):
@@ -70,7 +67,7 @@ class UltimateNetworkGenerator:
         Combine multiple network layers for realistic social structure
         FIXED VERSION: Creates attributes BEFORE using them
         """
-        print("🏗️  Building hybrid multilayer network...")
+        print(" Building hybrid multilayer network...")
         
         # 1. Start with small-world base network
         G = nx.watts_strogatz_graph(n=self.population, k=6, p=0.2)
@@ -318,7 +315,7 @@ class UltimateNetworkGenerator:
             if 'active' not in G[u][v]:
                 G[u][v]['active'] = True
     
-    # ==================== ATTRIBUTE GENERATION ====================
+    #  ATTRIBUTE GENERATION 
     def _add_attributes(self, G):
         """Add realistic demographic and disease-related attributes"""
         print("   Adding node attributes...")
@@ -505,7 +502,7 @@ class UltimateNetworkGenerator:
         
         return np.clip(risk, 0.0, 1.0)
     
-    # ==================== ANALYSIS METHODS ====================
+    #  ANALYSIS METHODS 
     def analyze_network(self, G):
         """Print network statistics"""
         print("\n📊 NETWORK ANALYSIS:")
@@ -546,7 +543,7 @@ class UltimateNetworkGenerator:
         }
 
 
-# ==================== QUICK TEST ====================
+#  QUICK TEST 
 if __name__ == "__main__":
     print("🧪 Testing Network Generator...")
     
