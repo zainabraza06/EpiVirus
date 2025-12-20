@@ -86,7 +86,11 @@ class PandemicDashboard:
             'intervention_history': [],
             'checkpoints': {},
             'simulation_complete': False,
-            'intervention_schedule': None
+            'intervention_schedule': None,
+            'custom_interventions': [],
+            'new_interv_day': 30,
+            'new_interv_type': 'mask_mandate',
+            'new_interv_params': '{"efficacy": 0.5, "compliance": 0.7}'
         }
         
         for key, value in default_state.items():
@@ -424,7 +428,7 @@ class PandemicDashboard:
             st.markdown('<h3 class="sub-header">🚀 Quick Actions</h3>', 
                        unsafe_allow_html=True)
             
-            # Action buttons - NOT inside a form
+            # Action buttons
             if not st.session_state.simulator:
                 st.info("**Start here:**")
             
@@ -479,8 +483,10 @@ class PandemicDashboard:
             st.error("⚠️ Required modules not available. Please check your imports.")
             st.info("Running in demonstration mode with mock data.")
         
-        # Create configuration form with expandable sections
-        with st.form("simulation_config", clear_on_submit=False):
+        # Create a container for all configuration inputs (NO FORM)
+        config_container = st.container()
+        
+        with config_container:
             # ========== SECTION 1: NETWORK CONFIGURATION ==========
             st.markdown("""
             <div class="param-section network-params">
@@ -500,7 +506,8 @@ class PandemicDashboard:
                     max_value=10000,
                     value=1000,
                     step=100,
-                    help="Total number of individuals in the network"
+                    help="Total number of individuals in the network",
+                    key="population_slider"
                 )
                 
                 network_type = st.selectbox(
@@ -513,7 +520,8 @@ class PandemicDashboard:
                         "stochastic_block - Community-structured network"
                     ],
                     index=0,
-                    help="Type of network structure"
+                    help="Type of network structure",
+                    key="network_type_select"
                 )
                 
                 # Extract network type
@@ -532,7 +540,8 @@ class PandemicDashboard:
                         max_value=0.1,
                         value=0.01,
                         step=0.001,
-                        format="%.3f"
+                        format="%.3f",
+                        key="erdos_p_slider"
                     )
                 
                 elif network_type == "watts_strogatz":
@@ -541,14 +550,16 @@ class PandemicDashboard:
                         min_value=2,
                         max_value=20,
                         value=8,
-                        step=1
+                        step=1,
+                        key="watts_k_slider"
                     )
                     network_params['watts_p'] = st.slider(
                         "Rewiring Probability (p)",
                         min_value=0.0,
                         max_value=1.0,
                         value=0.3,
-                        step=0.05
+                        step=0.05,
+                        key="watts_p_slider"
                     )
                 
                 elif network_type == "barabasi_albert":
@@ -557,7 +568,8 @@ class PandemicDashboard:
                         min_value=1,
                         max_value=10,
                         value=3,
-                        step=1
+                        step=1,
+                        key="barabasi_m_slider"
                     )
                 
                 elif network_type == "stochastic_block":
@@ -566,7 +578,8 @@ class PandemicDashboard:
                         min_value=2,
                         max_value=10,
                         value=4,
-                        step=1
+                        step=1,
+                        key="n_communities_slider"
                     )
                     
                     # Create community sizes
@@ -578,7 +591,8 @@ class PandemicDashboard:
                             min_value=10,
                             max_value=remaining - 10 * (n_communities - i - 1),
                             value=remaining // n_communities,
-                            step=10
+                            step=10,
+                            key=f"community_{i}_size"
                         )
                         community_sizes.append(size)
                         remaining -= size
@@ -590,14 +604,16 @@ class PandemicDashboard:
                         min_value=0.01,
                         max_value=0.5,
                         value=0.15,
-                        step=0.01
+                        step=0.01,
+                        key="block_intra_slider"
                     )
                     network_params['block_inter'] = st.slider(
                         "Between-Community Probability",
                         min_value=0.001,
                         max_value=0.05,
                         value=0.01,
-                        step=0.001
+                        step=0.001,
+                        key="block_inter_slider"
                     )
                 
                 elif network_type == "hybrid_multilayer":
@@ -606,21 +622,24 @@ class PandemicDashboard:
                         min_value=0.1,
                         max_value=1.0,
                         value=0.8,
-                        step=0.05
+                        step=0.05,
+                        key="school_p_slider"
                     )
                     network_params['workplace_p'] = st.slider(
                         "Workplace Connection Probability",
                         min_value=0.1,
                         max_value=1.0,
                         value=0.6,
-                        step=0.05
+                        step=0.05,
+                        key="workplace_p_slider"
                     )
                     network_params['community_p'] = st.slider(
                         "Community Connection Probability",
                         min_value=0.1,
                         max_value=1.0,
                         value=0.4,
-                        step=0.05
+                        step=0.05,
+                        key="community_p_slider"
                     )
             
             # ========== SECTION 2: DISEASE CONFIGURATION ==========
@@ -650,7 +669,8 @@ class PandemicDashboard:
                         "sars - SARS-CoV-1"
                     ],
                     index=1,
-                    help="Select a predefined disease or create custom parameters"
+                    help="Select a predefined disease or create custom parameters",
+                    key="disease_choice_select"
                 )
                 
                 if " - " in disease_choice:
@@ -665,7 +685,8 @@ class PandemicDashboard:
                     max_value=100,
                     value=10,
                     step=1,
-                    help="Number of initially infected individuals"
+                    help="Number of initially infected individuals",
+                    key="n_seed_infections_slider"
                 )
                 
                 seed_method = st.selectbox(
@@ -678,7 +699,8 @@ class PandemicDashboard:
                         "age_targeted - Target specific age groups"
                     ],
                     index=0,
-                    help="How to select initial infections"
+                    help="How to select initial infections",
+                    key="seed_method_select"
                 )
                 
                 if " - " in seed_method:
@@ -691,13 +713,14 @@ class PandemicDashboard:
                 
                 if disease_variant == "custom":
                     # Basic parameters
-                    custom_params['name'] = st.text_input("Disease Name", "Custom Disease", key="disease_name")
+                    custom_params['name'] = st.text_input("Disease Name", "Custom Disease", key="disease_name_input")
                     custom_params['R0'] = st.slider(
                         "**Basic Reproduction Number (R₀)**",
                         min_value=0.5,
                         max_value=20.0,
                         value=2.5,
-                        step=0.1
+                        step=0.1,
+                        key="R0_slider"
                     )
                     
                     custom_params['generation_time'] = st.slider(
@@ -705,7 +728,8 @@ class PandemicDashboard:
                         min_value=1.0,
                         max_value=20.0,
                         value=5.2,
-                        step=0.1
+                        step=0.1,
+                        key="generation_time_slider"
                     )
                     
                     # Incubation period
@@ -716,7 +740,7 @@ class PandemicDashboard:
                         max_value=21.0,
                         value=5.2,
                         step=0.1,
-                        key="inc_mean"
+                        key="inc_mean_slider"
                     )
                     incubation_std = st.slider(
                         "Standard Deviation (days)",
@@ -724,7 +748,7 @@ class PandemicDashboard:
                         max_value=7.0,
                         value=2.8,
                         step=0.1,
-                        key="inc_std"
+                        key="inc_std_slider"
                     )
                     custom_params['incubation_period'] = {'mean': incubation_mean, 'std': incubation_std}
                     
@@ -736,7 +760,7 @@ class PandemicDashboard:
                         max_value=30.0,
                         value=10.0,
                         step=0.5,
-                        key="inf_mean"
+                        key="inf_mean_slider"
                     )
                     infectious_std = st.slider(
                         "Standard Deviation (days)",
@@ -744,7 +768,7 @@ class PandemicDashboard:
                         max_value=10.0,
                         value=3.0,
                         step=0.1,
-                        key="inf_std"
+                        key="inf_std_slider"
                     )
                     custom_params['infectious_period'] = {'mean': infectious_mean, 'std': infectious_std}
                     
@@ -757,7 +781,8 @@ class PandemicDashboard:
                             min_value=0.0,
                             max_value=1.0,
                             value=0.4,
-                            step=0.01
+                            step=0.01,
+                            key="p_asymptomatic_slider"
                         )
                     with col_b:
                         custom_params['p_mild'] = st.slider(
@@ -765,7 +790,8 @@ class PandemicDashboard:
                             min_value=0.0,
                             max_value=1.0,
                             value=0.4,
-                            step=0.01
+                            step=0.01,
+                            key="p_mild_slider"
                         )
                     with col_c:
                         custom_params['p_severe'] = st.slider(
@@ -773,7 +799,8 @@ class PandemicDashboard:
                             min_value=0.0,
                             max_value=1.0,
                             value=0.15,
-                            step=0.01
+                            step=0.01,
+                            key="p_severe_slider"
                         )
                     with col_d:
                         custom_params['p_critical'] = st.slider(
@@ -781,7 +808,8 @@ class PandemicDashboard:
                             min_value=0.0,
                             max_value=1.0,
                             value=0.05,
-                            step=0.01
+                            step=0.01,
+                            key="p_critical_slider"
                         )
                     
                     # Outcomes
@@ -791,14 +819,16 @@ class PandemicDashboard:
                         min_value=0.0,
                         max_value=1.0,
                         value=0.15,
-                        step=0.01
+                        step=0.01,
+                        key="hospitalization_rate_slider"
                     )
                     custom_params['icu_rate'] = st.slider(
                         "ICU Rate (of hospitalized)",
                         min_value=0.0,
                         max_value=1.0,
                         value=0.05,
-                        step=0.01
+                        step=0.01,
+                        key="icu_rate_slider"
                     )
                     custom_params['mortality_rate'] = st.slider(
                         "Mortality Rate",
@@ -806,7 +836,8 @@ class PandemicDashboard:
                         max_value=1.0,
                         value=0.02,
                         step=0.001,
-                        format="%.3f"
+                        format="%.3f",
+                        key="mortality_rate_slider"
                     )
                     
                     # Vaccine parameters
@@ -820,7 +851,7 @@ class PandemicDashboard:
                                 max_value=1.0,
                                 value=0.9,
                                 step=0.01,
-                                key="vac_inf_eff"
+                                key="vac_inf_eff_slider"
                             ),
                             'severity': st.slider(
                                 "Severity Efficacy",
@@ -828,7 +859,7 @@ class PandemicDashboard:
                                 max_value=1.0,
                                 value=0.95,
                                 step=0.01,
-                                key="vac_sev_eff"
+                                key="vac_sev_eff_slider"
                             )
                         }
                     with vaccine_col2:
@@ -838,7 +869,7 @@ class PandemicDashboard:
                             max_value=1.0,
                             value=0.5,
                             step=0.01,
-                            key="vac_trans_red"
+                            key="vac_trans_red_slider"
                         )
                         custom_params['vaccine_efficacy']['waning_start'] = st.slider(
                             "Waning Start (days)",
@@ -846,7 +877,7 @@ class PandemicDashboard:
                             max_value=365,
                             value=180,
                             step=10,
-                            key="vac_waning_start"
+                            key="vac_waning_start_slider"
                         )
                         custom_params['vaccine_efficacy']['waning_rate'] = st.slider(
                             "Waning Rate (daily)",
@@ -855,7 +886,7 @@ class PandemicDashboard:
                             value=0.001,
                             step=0.0001,
                             format="%.4f",
-                            key="vac_waning_rate"
+                            key="vac_waning_rate_slider"
                         )
                 else:
                     # Reset custom_params for non-custom diseases
@@ -892,7 +923,8 @@ class PandemicDashboard:
                             "custom - Custom intervention schedule"
                         ],
                         index=1,
-                        help="Predefined intervention scenarios"
+                        help="Predefined intervention scenarios",
+                        key="intervention_scenario_select"
                     )
                     
                     if " - " in intervention_scenario:
@@ -903,7 +935,8 @@ class PandemicDashboard:
                         min_value=30,
                         max_value=365,
                         value=120,
-                        step=10
+                        step=10,
+                        key="simulation_days_slider"
                     )
                 
                 with inter_col2:
@@ -931,7 +964,8 @@ class PandemicDashboard:
                     max_value=1.0,
                     value=0.7,
                     step=0.05,
-                    help="Baseline compliance rate for all interventions"
+                    help="Baseline compliance rate for all interventions",
+                    key="base_compliance_slider"
                 )
                 
                 # Mask parameters
@@ -943,7 +977,8 @@ class PandemicDashboard:
                         max_value=0.9,
                         value=0.5,
                         step=0.05,
-                        help="Effectiveness of masks at reducing transmission"
+                        help="Effectiveness of masks at reducing transmission",
+                        key="mask_efficacy_slider"
                     )
                 with mask_col2:
                     mask_compliance = st.slider(
@@ -952,7 +987,8 @@ class PandemicDashboard:
                         max_value=1.0,
                         value=0.8,
                         step=0.05,
-                        help="Percentage of population wearing masks"
+                        help="Percentage of population wearing masks",
+                        key="mask_compliance_slider"
                     )
                 
                 # Social distancing
@@ -964,7 +1000,8 @@ class PandemicDashboard:
                         max_value=0.8,
                         value=0.3,
                         step=0.05,
-                        help="How effective social distancing is at reducing contacts"
+                        help="How effective social distancing is at reducing contacts",
+                        key="distancing_effect_slider"
                     )
                 with sd_col2:
                     distancing_compliance = st.slider(
@@ -972,7 +1009,8 @@ class PandemicDashboard:
                         min_value=0.0,
                         max_value=1.0,
                         value=0.6,
-                        step=0.05
+                        step=0.05,
+                        key="distancing_compliance_slider"
                     )
                 
                 # Vaccination
@@ -984,21 +1022,24 @@ class PandemicDashboard:
                         max_value=0.05,
                         value=0.005,
                         step=0.001,
-                        format="%.3f"
+                        format="%.3f",
+                        key="vaccination_rate_slider"
                     )
                     vaccine_efficacy = st.slider(
                         "**Vaccine Efficacy**",
                         min_value=0.0,
                         max_value=1.0,
                         value=0.9,
-                        step=0.01
+                        step=0.01,
+                        key="vaccine_efficacy_slider"
                     )
                 with vax_col2:
                     vaccination_priority = st.selectbox(
                         "**Vaccination Priority**",
                         ["age", "frontline", "random", "vulnerable"],
                         index=0,
-                        help="Which groups to vaccinate first"
+                        help="Which groups to vaccinate first",
+                        key="vaccination_priority_select"
                     )
                 
                 # Testing
@@ -1009,14 +1050,16 @@ class PandemicDashboard:
                         min_value=0.0,
                         max_value=0.1,
                         value=0.05,
-                        step=0.01
+                        step=0.01,
+                        key="testing_rate_slider"
                     )
                     testing_accuracy = st.slider(
                         "**Test Accuracy**",
                         min_value=0.5,
                         max_value=1.0,
                         value=0.95,
-                        step=0.01
+                        step=0.01,
+                        key="testing_accuracy_slider"
                     )
                 with test_col2:
                     testing_delay = st.slider(
@@ -1024,14 +1067,16 @@ class PandemicDashboard:
                         min_value=0,
                         max_value=7,
                         value=2,
-                        step=1
+                        step=1,
+                        key="testing_delay_slider"
                     )
                     isolation_compliance = st.slider(
                         "**Isolation Compliance**",
                         min_value=0.0,
                         max_value=1.0,
                         value=0.8,
-                        step=0.05
+                        step=0.05,
+                        key="isolation_compliance_slider"
                     )
                 
                 # Lockdown parameters
@@ -1043,7 +1088,8 @@ class PandemicDashboard:
                             min_value=0.0,
                             max_value=1.0,
                             value=0.7,
-                            step=0.05
+                            step=0.05,
+                            key="lockdown_strictness_slider"
                         )
                     with lock_col2:
                         lockdown_duration = st.slider(
@@ -1051,7 +1097,8 @@ class PandemicDashboard:
                             min_value=7,
                             max_value=90,
                             value=30,
-                            step=7
+                            step=7,
+                            key="lockdown_duration_slider"
                         )
                 else:
                     lockdown_strictness = 0.0
@@ -1062,9 +1109,6 @@ class PandemicDashboard:
                 st.info("Create your own intervention timeline")
                 
                 # Display current custom interventions
-                if 'custom_interventions' not in st.session_state:
-                    st.session_state.custom_interventions = []
-                
                 if st.session_state.custom_interventions:
                     st.markdown("##### Current Schedule")
                     for i, interv in enumerate(st.session_state.custom_interventions):
@@ -1080,29 +1124,29 @@ class PandemicDashboard:
                 else:
                     st.info("No custom interventions added yet.")
                 
-                # Separate form to add interventions (can't have button inside main form)
+                # Inputs for new intervention
                 st.markdown("---")
                 st.markdown("##### Add New Intervention")
-                with st.form("add_intervention_form"):
-                    col_a, col_b, col_c = st.columns([2, 2, 2])
-                    with col_a:
-                        new_interv_day = st.number_input("Day", min_value=0, max_value=365, value=30, key="new_day")
-                    with col_b:
-                        new_interv_type = st.selectbox(
-                            "Type",
-                            ["mask_mandate", "social_distancing", "vaccination", "testing", 
-                             "lockdown", "travel_restrictions", "reopen"],
-                            index=0,
-                            key="new_type"
-                        )
-                    with col_c:
-                        new_interv_params = st.text_input("Parameters (JSON)", 
-                                                        value='{"efficacy": 0.5, "compliance": 0.7}',
-                                                        key="new_params")
-                    
-                    add_submitted = st.form_submit_button("Add Intervention")
-                    
-                    if add_submitted:
+                col_a, col_b, col_c, col_d = st.columns([2, 2, 2, 1])
+                with col_a:
+                    new_interv_day = st.number_input("Day", min_value=0, max_value=365, 
+                                                    value=st.session_state.new_interv_day, 
+                                                    key="new_day_input")
+                with col_b:
+                    new_interv_type = st.selectbox(
+                        "Type",
+                        ["mask_mandate", "social_distancing", "vaccination", "testing", 
+                         "lockdown", "travel_restrictions", "reopen"],
+                        index=0,
+                        key="new_type_select"
+                    )
+                with col_c:
+                    new_interv_params = st.text_input("Parameters (JSON)", 
+                                                    value=st.session_state.new_interv_params,
+                                                    key="new_params_input")
+                with col_d:
+                    # This button is outside any form
+                    if st.button("Add", use_container_width=True, key="add_interv_btn"):
                         try:
                             params = json.loads(new_interv_params)
                             st.session_state.custom_interventions.append({
@@ -1110,6 +1154,9 @@ class PandemicDashboard:
                                 'type': new_interv_type,
                                 'params': params
                             })
+                            st.session_state.new_interv_day = 30
+                            st.session_state.new_interv_type = 'mask_mandate'
+                            st.session_state.new_interv_params = '{"efficacy": 0.5, "compliance": 0.7}'
                             st.success("Added!")
                             st.rerun()
                         except Exception as e:
@@ -1131,7 +1178,8 @@ class PandemicDashboard:
                 animate_simulation = st.checkbox(
                     "**Enable Animation Recording**",
                     value=True,
-                    help="Record simulation states for animation"
+                    help="Record simulation states for animation",
+                    key="animate_simulation_checkbox"
                 )
                 
                 if animate_simulation:
@@ -1141,7 +1189,8 @@ class PandemicDashboard:
                         max_value=10,
                         value=2,
                         step=1,
-                        help="Days between animation frames"
+                        help="Days between animation frames",
+                        key="animation_step_slider"
                     )
                 else:
                     animation_step = 1
@@ -1149,7 +1198,8 @@ class PandemicDashboard:
                 save_checkpoints = st.checkbox(
                     "**Save Simulation Checkpoints**",
                     value=True,
-                    help="Save intermediate states for restarting simulations"
+                    help="Save intermediate states for restarting simulations",
+                    key="save_checkpoints_checkbox"
                 )
             
             with sim_col2:
@@ -1157,7 +1207,8 @@ class PandemicDashboard:
                 
                 show_progress = st.checkbox(
                     "**Show Progress Bar**",
-                    value=True
+                    value=True,
+                    key="show_progress_checkbox"
                 )
                 
                 random_seed = st.number_input(
@@ -1166,12 +1217,14 @@ class PandemicDashboard:
                     max_value=10000,
                     value=42,
                     step=1,
-                    help="For reproducible simulations"
+                    help="For reproducible simulations",
+                    key="random_seed_input"
                 )
                 
                 save_results = st.checkbox(
                     "**Save Results to File**",
-                    value=True
+                    value=True,
+                    key="save_results_checkbox"
                 )
             
             # ========== RUN SIMULATION ==========
@@ -1217,17 +1270,18 @@ class PandemicDashboard:
                     if animate_simulation:
                         st.caption(f"Animation: Enabled (step: {animation_step})")
             
-            # Run button (form submit button)
+            # Run button - NO FORM, just a regular button
             run_col1, run_col2, run_col3 = st.columns([1, 2, 1])
             with run_col2:
-                submitted = st.form_submit_button(
+                run_simulation = st.button(
                     "🚀 **RUN SIMULATION NOW**",
                     type="primary",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="run_simulation_btn"
                 )
         
-        # Handle form submission
-        if submitted:
+        # Handle button click outside the container
+        if run_simulation:
             # Store all parameters
             st.session_state.simulation_params = {
                 'population': population,
@@ -1496,7 +1550,8 @@ class PandemicDashboard:
         analysis_type = st.selectbox(
             "Analysis Type",
             ["Epidemic Curves", "Network Analysis", "Disease Spread", "Intervention Effects", "Detailed Statistics"],
-            index=0
+            index=0,
+            key="analysis_type"
         )
         
         if analysis_type == "Epidemic Curves":
@@ -1643,15 +1698,15 @@ class PandemicDashboard:
                 col1, col2, col3, col4, col5 = st.columns(5)
                 
                 with col1:
-                    st.metric("Attack Rate", f"{stats.get('attack_rate', 0)*100:.1f}%")
+                    st.metric("Attack Rate", f"{stats.get('attack_rate', 0)*100:.1f}%", key="metric_ar")
                 with col2:
-                    st.metric("Peak Infections", f"{stats.get('peak_infections', 0):.0f}")
+                    st.metric("Peak Infections", f"{stats.get('peak_infections', 0):.0f}", key="metric_pi")
                 with col3:
-                    st.metric("Total Deaths", f"{stats.get('total_deaths', 0):.0f}")
+                    st.metric("Total Deaths", f"{stats.get('total_deaths', 0):.0f}", key="metric_td")
                 with col4:
-                    st.metric("Case Fatality", f"{stats.get('case_fatality_rate', 0)*100:.2f}%")
+                    st.metric("Case Fatality", f"{stats.get('case_fatality_rate', 0)*100:.2f}%", key="metric_cfr")
                 with col5:
-                    st.metric("Total Vaccinated", f"{stats.get('total_vaccinated', 0):.0f}")
+                    st.metric("Total Vaccinated", f"{stats.get('total_vaccinated', 0):.0f}", key="metric_tv")
             except:
                 pass
     
@@ -1669,16 +1724,16 @@ class PandemicDashboard:
         col1, col2, col3, col4, col5 = st.columns(5)
         
         with col1:
-            st.metric("Nodes", G.number_of_nodes())
+            st.metric("Nodes", G.number_of_nodes(), key="metric_nodes")
         with col2:
-            st.metric("Edges", G.number_of_edges())
+            st.metric("Edges", G.number_of_edges(), key="metric_edges")
         with col3:
-            st.metric("Density", f"{nx.density(G):.4f}")
+            st.metric("Density", f"{nx.density(G):.4f}", key="metric_density")
         with col4:
             degrees = [d for _, d in G.degree()]
-            st.metric("Avg Degree", f"{np.mean(degrees):.2f}")
+            st.metric("Avg Degree", f"{np.mean(degrees):.2f}", key="metric_avg_deg")
         with col5:
-            st.metric("Max Degree", f"{max(degrees):.0f}")
+            st.metric("Max Degree", f"{max(degrees):.0f}", key="metric_max_deg")
         
         # Degree distribution
         st.markdown("### 📊 Degree Distribution")
@@ -1881,7 +1936,7 @@ class PandemicDashboard:
                             
                             # Format metric name
                             name = metric.replace('_', ' ').title()
-                            st.metric(name, display)
+                            st.metric(name, display, key=f"detailed_{metric}")
             
             # Detailed data table
             st.markdown("### 📈 Time Series Summary")
@@ -2916,7 +2971,7 @@ class PandemicDashboard:
                                 display = f"{value:.2%}" if 'rate' in key else f"{value:.2f}"
                             else:
                                 display = str(value)
-                            st.metric(key.replace('_', ' ').title(), display)
+                            st.metric(key.replace('_', ' ').title(), display, key=f"epidemic_{key}")
                 
                 with metrics_col2:
                     st.markdown("#### 👥 Population Metrics")
@@ -2925,7 +2980,7 @@ class PandemicDashboard:
                     for key in population_metrics:
                         if key in stats:
                             value = stats[key]
-                            st.metric(key.replace('_', ' ').title(), f"{value:,}")
+                            st.metric(key.replace('_', ' ').title(), f"{value:,}", key=f"pop_{key}")
             except:
                 st.warning("Could not load summary statistics")
         
