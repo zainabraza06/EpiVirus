@@ -1,4 +1,4 @@
-# main_dashboard.py - FIXED VERSION
+# main_dashboard.py - COMPLETE VERSION WITH MAXIMUM PARAMETER CONTROL
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -85,7 +85,8 @@ class PandemicDashboard:
             'disease_spread_data': [],
             'intervention_history': [],
             'checkpoints': {},
-            'simulation_complete': False
+            'simulation_complete': False,
+            'intervention_schedule': None
         }
         
         for key, value in default_state.items():
@@ -189,6 +190,43 @@ class PandemicDashboard:
         .node-v {
             background-color: #9C27B0;
         }
+        
+        .param-section {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            border-left: 5px solid #1E88E5;
+        }
+        
+        .param-section h4 {
+            color: #1E88E5;
+            margin-top: 0;
+        }
+        
+        .advanced-params {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+        }
+        
+        .intervention-params {
+            background-color: #d4edda;
+            border-left: 5px solid #28a745;
+        }
+        
+        .disease-params {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+        
+        .network-params {
+            background-color: #d1ecf1;
+            border-left: 5px solid #17a2b8;
+        }
+        
+        .tab-content {
+            padding: 1rem;
+        }
         </style>
         """, unsafe_allow_html=True)
     
@@ -234,7 +272,7 @@ class PandemicDashboard:
     # ==================== TAB 1: OVERVIEW ====================
     
     def _render_overview_tab(self):
-        """Render the overview tab"""
+        """Render the overview tab with configuration guidance"""
         col1, col2, col3 = st.columns([2, 1, 1])
         
         with col1:
@@ -251,29 +289,78 @@ class PandemicDashboard:
             - Color-coded nodes show infection status
             - Animated edges show transmission paths
             
-            **🌐 Network Generation**
-            - Create realistic social networks with various structures
-            - Control population size, connection patterns, and demographics
+            **🌐 Advanced Network Generation**
+            - Multiple network types (Erdős–Rényi, Watts-Strogatz, Barabási–Albert)
+            - Hybrid multilayer networks with households, workplaces, schools
+            - Custom community structures
             
-            **🦠 Disease Modeling**
-            - Simulate COVID-19 variants (Wildtype, Alpha, Delta, Omicron)
-            - Customize transmission parameters
+            **🦠 Comprehensive Disease Modeling**
+            - Multiple COVID-19 variants (Wildtype, Alpha, Delta, Omicron)
+            - Custom disease parameterization
+            - Age-stratified susceptibility and severity
             
-            **🛡️ Intervention Strategies**
-            - Test different intervention scenarios
-            - Adjust timing and efficacy of measures
+            **🛡️ Detailed Intervention Strategies**
+            - Mask mandates with adjustable compliance
+            - Social distancing with effectiveness settings
+            - Vaccination campaigns with priority options
+            - Lockdowns with strictness controls
+            - Testing regimes with accuracy settings
             
             **📊 Advanced Visualization**
-            - 3D interactive network visualization
-            - Real-time simulation animation
+            - Real-time network animation
+            - Epidemic curve analysis
+            - Healthcare burden tracking
             - Video export (GIF/MP4) of simulations
+            """)
+            
+            # Configuration status
+            st.markdown("### ⚙️ Configuration Status")
+            status_cols = st.columns(4)
+            
+            with status_cols[0]:
+                if st.session_state.simulator:
+                    st.success("✅ Simulator Ready")
+                else:
+                    st.warning("⏳ Not Configured")
+            
+            with status_cols[1]:
+                if st.session_state.animation_ready:
+                    st.success("✅ Animation Ready")
+                else:
+                    st.info("🎬 Not Prepared")
+            
+            with status_cols[2]:
+                if st.session_state.simulation_history:
+                    st.success("✅ Results Available")
+                else:
+                    st.info("📊 No Results")
+            
+            with status_cols[3]:
+                if st.session_state.simulation_complete:
+                    st.success("✅ Simulation Complete")
+                else:
+                    st.info("⚡ Not Run")
+            
+            # Quick start guide
+            st.markdown("""
+            ### 🚀 Quick Start Guide
+            
+            1. **Go to Simulation tab** ⬅️
+            2. **Configure all parameters** (network, disease, interventions)
+            3. **Review configuration summary**
+            4. **Run simulation**
+            5. **Watch animation** in Visualization tab
+            6. **Analyze results** in Analysis tab
+            7. **Export videos** in Animation tab
+            
+            **Pro tip:** Start with example simulation to see all features in action!
             """)
             
             # Show animation preview if available
             if st.session_state.animation_ready and st.session_state.animation_frames:
                 st.markdown("### 🎬 Current Animation Preview")
                 if len(st.session_state.animation_frames) > 1:
-                    preview_day = st.slider("Preview Day", 0, len(st.session_state.animation_frames)-1, 0)
+                    preview_day = st.slider("Preview Day", 0, len(st.session_state.animation_frames)-1, 0, key="preview_slider")
                     self._display_animation_frame(preview_day)
                 else:
                     self._display_animation_frame(0)
@@ -282,7 +369,7 @@ class PandemicDashboard:
             st.markdown('<h3 class="sub-header">📈 Quick Stats</h3>', 
                        unsafe_allow_html=True)
             
-            # Example metrics
+            # Metrics
             metrics_data = {}
             
             if st.session_state.simulator:
@@ -318,17 +405,45 @@ class PandemicDashboard:
                     </div>
                     """, unsafe_allow_html=True)
                     st.write("")
+            
+            # Navigation
+            st.markdown("### 🔍 Where to Go:")
+            nav_options = {
+                "⚙️ Simulation": "Configure all simulation parameters",
+                "📊 Analysis": "Detailed epidemic analysis and statistics",
+                "🎨 Visualization": "Network visualization and animation",
+                "🎬 Animation": "Create and export videos",
+                "📈 Results": "Download data and reports"
+            }
+            
+            for nav_item, description in nav_options.items():
+                st.markdown(f"**{nav_item}**")
+                st.caption(description)
         
         with col3:
-            st.markdown('<h3 class="sub-header">🚀 Quick Start</h3>', 
+            st.markdown('<h3 class="sub-header">🚀 Quick Actions</h3>', 
                        unsafe_allow_html=True)
             
-            if st.button("▶️ Run Example Simulation", type="primary", use_container_width=True):
+            # Action buttons - NOT inside a form
+            if not st.session_state.simulator:
+                st.info("**Start here:**")
+            
+            if st.button("▶️ Run Example Simulation", type="primary", use_container_width=True, key="overview_example_btn"):
                 self._run_example_simulation()
             
             if st.session_state.simulator and not st.session_state.animation_ready and st.session_state.simulation_history:
-                if st.button("🎬 Prepare Animation", use_container_width=True):
+                if st.button("🎬 Prepare Animation", use_container_width=True, key="overview_prepare_btn"):
                     self._prepare_animation()
+            
+            if st.session_state.simulator:
+                if st.button("🔄 New Simulation", use_container_width=True, key="overview_new_btn"):
+                    st.session_state.simulator = None
+                    st.session_state.simulation_history = None
+                    st.session_state.animation_ready = False
+                    st.session_state.animation_frames = []
+                    st.session_state.simulation_complete = False
+                    st.success("Ready for new simulation!")
+                    st.rerun()
             
             # State legend
             st.markdown("### 🎨 State Colors")
@@ -342,109 +457,134 @@ class PandemicDashboard:
                 <div class="state-item"><div class="state-color node-v"></div>Vaccinated</div>
             </div>
             """, unsafe_allow_html=True)
-        
-        # Recent simulations
-        if st.session_state.simulation_history is not None:
-            st.markdown("---")
-            st.markdown('<h3 class="sub-header">📋 Recent Simulation</h3>', 
-                       unsafe_allow_html=True)
             
-            cols = st.columns(5)
-            
-            try:
-                stats = st.session_state.simulator.get_summary_stats()
-                
-                metric_keys = ['attack_rate', 'peak_infections', 'total_deaths', 'case_fatality_rate', 'total_vaccinated']
-                metric_labels = ['Attack Rate', 'Peak Infections', 'Total Deaths', 'Fatality Rate', 'Vaccinated']
-                
-                for i, (key, label) in enumerate(zip(metric_keys, metric_labels)):
-                    with cols[i]:
-                        value = stats.get(key, 0)
-                        if isinstance(value, float):
-                            display_value = f"{value:.2%}" if 'rate' in key else f"{value:.0f}"
-                        else:
-                            display_value = str(value)
-                        
-                        st.metric(label=label, value=display_value)
-                
-                # Animation status
-                with cols[4]:
-                    if st.session_state.animation_ready:
-                        st.metric("Animation", "✅ Ready", delta="Prepared")
-                    else:
-                        st.metric("Animation", "⏳ Not Ready")
-            except:
-                pass
+            # Tips
+            st.markdown("### 💡 Tips")
+            st.markdown("""
+            - Start with 500-1000 population for testing
+            - Try different network structures
+            - Compare intervention strategies
+            - Use custom disease parameters for research
+            - Export animations for presentations
+            """)
     
     # ==================== TAB 2: SIMULATION ====================
     
     def _render_simulation_tab(self):
-        """Render the simulation configuration tab"""
-        st.markdown('<h2 class="sub-header">⚙️ Simulation Configuration</h2>', 
+        """Render the simulation configuration tab with maximum control"""
+        st.markdown('<h2 class="sub-header">⚙️ Complete Simulation Configuration</h2>', 
                    unsafe_allow_html=True)
         
         if not MODULES_AVAILABLE:
             st.error("⚠️ Required modules not available. Please check your imports.")
             st.info("Running in demonstration mode with mock data.")
         
-        # Create configuration form
-        with st.form("simulation_config"):
-            col1, col2 = st.columns(2)
+        # Create configuration form with expandable sections
+        with st.form("simulation_config", clear_on_submit=False):
+            # ========== SECTION 1: NETWORK CONFIGURATION ==========
+            st.markdown("""
+            <div class="param-section network-params">
+                <h4>🌐 1. Network Configuration</h4>
+                Configure the social network structure
+            </div>
+            """, unsafe_allow_html=True)
             
-            with col1:
-                st.markdown("### 🌐 Network Configuration")
+            network_col1, network_col2 = st.columns(2)
+            
+            with network_col1:
+                st.markdown("#### Population & Type")
                 
                 population = st.slider(
-                    "Population Size",
+                    "**Population Size**",
                     min_value=100,
-                    max_value=5000,
+                    max_value=10000,
                     value=1000,
                     step=100,
                     help="Total number of individuals in the network"
                 )
                 
                 network_type = st.selectbox(
-                    "Network Type",
-                    ["hybrid", "erdos_renyi", "watts_strogatz", "barabasi_albert", "stochastic_block"],
+                    "**Network Structure Type**",
+                    [
+                        "hybrid_multilayer - Realistic social network with households, workplaces, schools",
+                        "erdos_renyi - Random connections (Erdős–Rényi model)", 
+                        "watts_strogatz - Small-world network (Watts-Strogatz model)",
+                        "barabasi_albert - Scale-free network (Barabási–Albert model)",
+                        "stochastic_block - Community-structured network"
+                    ],
                     index=0,
                     help="Type of network structure"
                 )
                 
-                # Network-specific parameters
+                # Extract network type
+                if " - " in network_type:
+                    network_type = network_type.split(" - ")[0]
+            
+            with network_col2:
+                st.markdown("#### Network Parameters")
+                
                 network_params = {}
+                
                 if network_type == "erdos_renyi":
                     network_params['erdos_p'] = st.slider(
-                        "Connection Probability",
+                        "Connection Probability (p)",
                         min_value=0.001,
                         max_value=0.1,
                         value=0.01,
                         step=0.001,
                         format="%.3f"
                     )
+                
                 elif network_type == "watts_strogatz":
                     network_params['watts_k'] = st.slider(
-                        "Nearest Neighbors",
+                        "Nearest Neighbors (k)",
                         min_value=2,
                         max_value=20,
                         value=8,
                         step=1
                     )
                     network_params['watts_p'] = st.slider(
-                        "Rewiring Probability",
+                        "Rewiring Probability (p)",
                         min_value=0.0,
                         max_value=1.0,
                         value=0.3,
                         step=0.05
                     )
+                
                 elif network_type == "barabasi_albert":
                     network_params['barabasi_m'] = st.slider(
-                        "New Node Connections",
+                        "New Connections (m)",
                         min_value=1,
                         max_value=10,
                         value=3,
                         step=1
                     )
+                
                 elif network_type == "stochastic_block":
+                    n_communities = st.slider(
+                        "Number of Communities",
+                        min_value=2,
+                        max_value=10,
+                        value=4,
+                        step=1
+                    )
+                    
+                    # Create community sizes
+                    community_sizes = []
+                    remaining = population
+                    for i in range(n_communities - 1):
+                        size = st.slider(
+                            f"Community {i+1} Size",
+                            min_value=10,
+                            max_value=remaining - 10 * (n_communities - i - 1),
+                            value=remaining // n_communities,
+                            step=10
+                        )
+                        community_sizes.append(size)
+                        remaining -= size
+                    community_sizes.append(remaining)
+                    
+                    network_params['community_sizes'] = community_sizes
                     network_params['block_intra'] = st.slider(
                         "Within-Community Probability",
                         min_value=0.01,
@@ -459,59 +599,68 @@ class PandemicDashboard:
                         value=0.01,
                         step=0.001
                     )
-            
-            with col2:
-                st.markdown("### 🦠 Disease Configuration")
                 
-                disease_variant = st.selectbox(
-                    "Disease Variant",
-                    ["omicron", "delta", "alpha", "wildtype", "custom"],
-                    index=0,
-                    help="COVID-19 variant to simulate"
+                elif network_type == "hybrid_multilayer":
+                    network_params['school_p'] = st.slider(
+                        "School Connection Probability",
+                        min_value=0.1,
+                        max_value=1.0,
+                        value=0.8,
+                        step=0.05
+                    )
+                    network_params['workplace_p'] = st.slider(
+                        "Workplace Connection Probability",
+                        min_value=0.1,
+                        max_value=1.0,
+                        value=0.6,
+                        step=0.05
+                    )
+                    network_params['community_p'] = st.slider(
+                        "Community Connection Probability",
+                        min_value=0.1,
+                        max_value=1.0,
+                        value=0.4,
+                        step=0.05
+                    )
+            
+            # ========== SECTION 2: DISEASE CONFIGURATION ==========
+            st.markdown("""
+            <div class="param-section disease-params">
+                <h4>🦠 2. Disease Configuration</h4>
+                Configure disease transmission and progression parameters
+            </div>
+            """, unsafe_allow_html=True)
+            
+            disease_col1, disease_col2 = st.columns(2)
+            
+            with disease_col1:
+                st.markdown("#### Disease Selection")
+                
+                disease_choice = st.selectbox(
+                    "**Select Disease Model**",
+                    [
+                        "custom - Create custom disease parameters",
+                        "omicron - COVID-19 Omicron variant (high transmission, lower severity)",
+                        "delta - COVID-19 Delta variant (high transmission, higher severity)", 
+                        "alpha - COVID-19 Alpha variant (moderate transmission)",
+                        "wildtype - COVID-19 original strain",
+                        "influenza - Seasonal influenza",
+                        "measles - Measles (very high transmission)",
+                        "ebola - Ebola (high mortality)",
+                        "sars - SARS-CoV-1"
+                    ],
+                    index=1,
+                    help="Select a predefined disease or create custom parameters"
                 )
                 
-                if disease_variant == "custom":
-                    st.markdown("#### Custom Disease Parameters")
-                    
-                    custom_params = {}
-                    custom_params['R0'] = st.slider(
-                        "Basic Reproduction Number (R0)",
-                        min_value=1.0,
-                        max_value=10.0,
-                        value=2.5,
-                        step=0.1
-                    )
-                    
-                    custom_params['incubation_period'] = {
-                        'mean': st.slider(
-                            "Incubation Period (mean days)",
-                            min_value=1,
-                            max_value=14,
-                            value=5,
-                            step=1
-                        ),
-                        'std': st.slider(
-                            "Incubation Period (std days)",
-                            min_value=0,
-                            max_value=7,
-                            value=2,
-                            step=0.5
-                        )
-                    }
-                    
-                    custom_params['mortality_rate'] = st.slider(
-                        "Mortality Rate",
-                        min_value=0.001,
-                        max_value=0.1,
-                        value=0.01,
-                        step=0.001,
-                        format="%.3f"
-                    )
+                if " - " in disease_choice:
+                    disease_variant = disease_choice.split(" - ")[0]
                 else:
-                    custom_params = {}
+                    disease_variant = disease_choice
                 
+                # Initial infections
                 n_seed_infections = st.slider(
-                    "Initial Infections",
+                    "**Initial Infections**",
                     min_value=1,
                     max_value=100,
                     value=10,
@@ -520,82 +669,566 @@ class PandemicDashboard:
                 )
                 
                 seed_method = st.selectbox(
-                    "Infection Seeding Method",
-                    ["random", "hubs", "mobile", "geographic", "age_targeted"],
+                    "**Infection Seeding Method**",
+                    [
+                        "random - Random individuals",
+                        "hubs - Most connected individuals", 
+                        "mobile - Highest mobility individuals",
+                        "geographic - Cluster in one area",
+                        "age_targeted - Target specific age groups"
+                    ],
                     index=0,
                     help="How to select initial infections"
                 )
-            
-            # Simulation settings
-            st.markdown("---")
-            st.markdown("### ⚡ Simulation Settings")
-            
-            col3, col4 = st.columns(2)
-            
-            with col3:
-                simulation_days = st.slider(
-                    "Simulation Days",
-                    min_value=30,
-                    max_value=365,
-                    value=120,
-                    step=10
-                )
                 
-                intervention_scenario = st.selectbox(
-                    "Intervention Scenario",
-                    ["no_intervention", "rapid_response", "delayed_response", "herd_immunity"],
-                    index=0,
-                    help="Type of intervention strategy"
-                )
+                if " - " in seed_method:
+                    seed_method = seed_method.split(" - ")[0]
             
-            with col4:
-                vaccination_rate = st.slider(
-                    "Daily Vaccination Rate",
-                    min_value=0.0,
-                    max_value=0.05,
-                    value=0.005,
-                    step=0.001,
-                    format="%.3f",
-                    help="Percentage of population vaccinated daily"
-                ) if intervention_scenario != "no_intervention" else 0.0
+            with disease_col2:
+                st.markdown("#### Custom Disease Parameters")
                 
-                compliance_rate = st.slider(
-                    "Intervention Compliance",
+                custom_params = {}
+                
+                if disease_variant == "custom":
+                    # Basic parameters
+                    custom_params['name'] = st.text_input("Disease Name", "Custom Disease", key="disease_name")
+                    custom_params['R0'] = st.slider(
+                        "**Basic Reproduction Number (R₀)**",
+                        min_value=0.5,
+                        max_value=20.0,
+                        value=2.5,
+                        step=0.1
+                    )
+                    
+                    custom_params['generation_time'] = st.slider(
+                        "**Generation Time (days)**",
+                        min_value=1.0,
+                        max_value=20.0,
+                        value=5.2,
+                        step=0.1
+                    )
+                    
+                    # Incubation period
+                    st.markdown("##### Incubation Period")
+                    incubation_mean = st.slider(
+                        "Mean (days)",
+                        min_value=1.0,
+                        max_value=21.0,
+                        value=5.2,
+                        step=0.1,
+                        key="inc_mean"
+                    )
+                    incubation_std = st.slider(
+                        "Standard Deviation (days)",
+                        min_value=0.1,
+                        max_value=7.0,
+                        value=2.8,
+                        step=0.1,
+                        key="inc_std"
+                    )
+                    custom_params['incubation_period'] = {'mean': incubation_mean, 'std': incubation_std}
+                    
+                    # Infectious period
+                    st.markdown("##### Infectious Period")
+                    infectious_mean = st.slider(
+                        "Mean (days)",
+                        min_value=3.0,
+                        max_value=30.0,
+                        value=10.0,
+                        step=0.5,
+                        key="inf_mean"
+                    )
+                    infectious_std = st.slider(
+                        "Standard Deviation (days)",
+                        min_value=0.5,
+                        max_value=10.0,
+                        value=3.0,
+                        step=0.1,
+                        key="inf_std"
+                    )
+                    custom_params['infectious_period'] = {'mean': infectious_mean, 'std': infectious_std}
+                    
+                    # Severity probabilities
+                    st.markdown("##### Severity Probabilities")
+                    col_a, col_b, col_c, col_d = st.columns(4)
+                    with col_a:
+                        custom_params['p_asymptomatic'] = st.slider(
+                            "Asymptomatic",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=0.4,
+                            step=0.01
+                        )
+                    with col_b:
+                        custom_params['p_mild'] = st.slider(
+                            "Mild",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=0.4,
+                            step=0.01
+                        )
+                    with col_c:
+                        custom_params['p_severe'] = st.slider(
+                            "Severe",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=0.15,
+                            step=0.01
+                        )
+                    with col_d:
+                        custom_params['p_critical'] = st.slider(
+                            "Critical",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=0.05,
+                            step=0.01
+                        )
+                    
+                    # Outcomes
+                    st.markdown("##### Outcomes")
+                    custom_params['hospitalization_rate'] = st.slider(
+                        "Hospitalization Rate",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.15,
+                        step=0.01
+                    )
+                    custom_params['icu_rate'] = st.slider(
+                        "ICU Rate (of hospitalized)",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.05,
+                        step=0.01
+                    )
+                    custom_params['mortality_rate'] = st.slider(
+                        "Mortality Rate",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.02,
+                        step=0.001,
+                        format="%.3f"
+                    )
+                    
+                    # Vaccine parameters
+                    st.markdown("##### Vaccine Parameters")
+                    vaccine_col1, vaccine_col2 = st.columns(2)
+                    with vaccine_col1:
+                        custom_params['vaccine_efficacy'] = {
+                            'infection': st.slider(
+                                "Infection Efficacy",
+                                min_value=0.0,
+                                max_value=1.0,
+                                value=0.9,
+                                step=0.01,
+                                key="vac_inf_eff"
+                            ),
+                            'severity': st.slider(
+                                "Severity Efficacy",
+                                min_value=0.0,
+                                max_value=1.0,
+                                value=0.95,
+                                step=0.01,
+                                key="vac_sev_eff"
+                            )
+                        }
+                    with vaccine_col2:
+                        custom_params['vaccine_efficacy']['transmission'] = st.slider(
+                            "Transmission Reduction",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=0.5,
+                            step=0.01,
+                            key="vac_trans_red"
+                        )
+                        custom_params['vaccine_efficacy']['waning_start'] = st.slider(
+                            "Waning Start (days)",
+                            min_value=30,
+                            max_value=365,
+                            value=180,
+                            step=10,
+                            key="vac_waning_start"
+                        )
+                        custom_params['vaccine_efficacy']['waning_rate'] = st.slider(
+                            "Waning Rate (daily)",
+                            min_value=0.0,
+                            max_value=0.01,
+                            value=0.001,
+                            step=0.0001,
+                            format="%.4f",
+                            key="vac_waning_rate"
+                        )
+                else:
+                    # Reset custom_params for non-custom diseases
+                    custom_params = {}
+            
+            # ========== SECTION 3: INTERVENTION CONFIGURATION ==========
+            st.markdown("""
+            <div class="param-section intervention-params">
+                <h4>🛡️ 3. Intervention Configuration</h4>
+                Configure public health interventions and their timing
+            </div>
+            """, unsafe_allow_html=True)
+            
+            intervention_tab1, intervention_tab2, intervention_tab3 = st.tabs([
+                "📅 Intervention Schedule",
+                "⚡ Intervention Parameters",
+                "🎯 Custom Schedule"
+            ])
+            
+            with intervention_tab1:
+                inter_col1, inter_col2 = st.columns(2)
+                
+                with inter_col1:
+                    st.markdown("#### Intervention Scenario")
+                    
+                    intervention_scenario = st.selectbox(
+                        "**Select Intervention Strategy**",
+                        [
+                            "no_intervention - No interventions",
+                            "delayed_response - Delayed but effective measures", 
+                            "rapid_response - Early and strong measures",
+                            "herd_immunity - Focus on vaccination",
+                            "full_lockdown - Strict lockdown scenario",
+                            "custom - Custom intervention schedule"
+                        ],
+                        index=1,
+                        help="Predefined intervention scenarios"
+                    )
+                    
+                    if " - " in intervention_scenario:
+                        intervention_scenario = intervention_scenario.split(" - ")[0]
+                    
+                    simulation_days = st.slider(
+                        "**Simulation Duration (days)**",
+                        min_value=30,
+                        max_value=365,
+                        value=120,
+                        step=10
+                    )
+                
+                with inter_col2:
+                    st.markdown("#### Scenario Description")
+                    
+                    scenario_descriptions = {
+                        "no_intervention": "No public health interventions. Natural disease progression.",
+                        "delayed_response": "Interventions start after 30 days. Includes mask mandates, social distancing, and phased vaccination.",
+                        "rapid_response": "Early interventions starting at day 7. Intensive testing, masking, and travel restrictions.",
+                        "herd_immunity": "Focus on rapid vaccination to achieve herd immunity. Minimal non-pharmaceutical interventions.",
+                        "full_lockdown": "Strict lockdown starting at day 14. Complete travel restrictions, mandatory masking, and isolation.",
+                        "custom": "Create your own intervention schedule in the Custom Schedule tab."
+                    }
+                    
+                    if intervention_scenario in scenario_descriptions:
+                        st.info(scenario_descriptions[intervention_scenario])
+            
+            with intervention_tab2:
+                st.markdown("#### Intervention Parameters")
+                
+                # General compliance
+                base_compliance = st.slider(
+                    "**General Population Compliance**",
                     min_value=0.0,
                     max_value=1.0,
-                    value=0.8,
-                    step=0.05
-                ) if intervention_scenario != "no_intervention" else 0.0
+                    value=0.7,
+                    step=0.05,
+                    help="Baseline compliance rate for all interventions"
+                )
+                
+                # Mask parameters
+                mask_col1, mask_col2 = st.columns(2)
+                with mask_col1:
+                    mask_efficacy = st.slider(
+                        "**Mask Efficacy**",
+                        min_value=0.0,
+                        max_value=0.9,
+                        value=0.5,
+                        step=0.05,
+                        help="Effectiveness of masks at reducing transmission"
+                    )
+                with mask_col2:
+                    mask_compliance = st.slider(
+                        "**Mask Compliance**",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.8,
+                        step=0.05,
+                        help="Percentage of population wearing masks"
+                    )
+                
+                # Social distancing
+                sd_col1, sd_col2 = st.columns(2)
+                with sd_col1:
+                    distancing_effect = st.slider(
+                        "**Social Distancing Effectiveness**",
+                        min_value=0.0,
+                        max_value=0.8,
+                        value=0.3,
+                        step=0.05,
+                        help="How effective social distancing is at reducing contacts"
+                    )
+                with sd_col2:
+                    distancing_compliance = st.slider(
+                        "**Distancing Compliance**",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.6,
+                        step=0.05
+                    )
+                
+                # Vaccination
+                vax_col1, vax_col2 = st.columns(2)
+                with vax_col1:
+                    vaccination_rate = st.slider(
+                        "**Daily Vaccination Rate**",
+                        min_value=0.0,
+                        max_value=0.05,
+                        value=0.005,
+                        step=0.001,
+                        format="%.3f"
+                    )
+                    vaccine_efficacy = st.slider(
+                        "**Vaccine Efficacy**",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.9,
+                        step=0.01
+                    )
+                with vax_col2:
+                    vaccination_priority = st.selectbox(
+                        "**Vaccination Priority**",
+                        ["age", "frontline", "random", "vulnerable"],
+                        index=0,
+                        help="Which groups to vaccinate first"
+                    )
+                
+                # Testing
+                test_col1, test_col2 = st.columns(2)
+                with test_col1:
+                    testing_rate = st.slider(
+                        "**Daily Testing Rate**",
+                        min_value=0.0,
+                        max_value=0.1,
+                        value=0.05,
+                        step=0.01
+                    )
+                    testing_accuracy = st.slider(
+                        "**Test Accuracy**",
+                        min_value=0.5,
+                        max_value=1.0,
+                        value=0.95,
+                        step=0.01
+                    )
+                with test_col2:
+                    testing_delay = st.slider(
+                        "**Test Result Delay (days)**",
+                        min_value=0,
+                        max_value=7,
+                        value=2,
+                        step=1
+                    )
+                    isolation_compliance = st.slider(
+                        "**Isolation Compliance**",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.8,
+                        step=0.05
+                    )
+                
+                # Lockdown parameters
+                if intervention_scenario in ["delayed_response", "rapid_response", "full_lockdown"]:
+                    lock_col1, lock_col2 = st.columns(2)
+                    with lock_col1:
+                        lockdown_strictness = st.slider(
+                            "**Lockdown Strictness**",
+                            min_value=0.0,
+                            max_value=1.0,
+                            value=0.7,
+                            step=0.05
+                        )
+                    with lock_col2:
+                        lockdown_duration = st.slider(
+                            "**Lockdown Duration (days)**",
+                            min_value=7,
+                            max_value=90,
+                            value=30,
+                            step=7
+                        )
+                else:
+                    lockdown_strictness = 0.0
+                    lockdown_duration = 0
             
-            # Animation settings
+            with intervention_tab3:
+                st.markdown("#### Custom Intervention Schedule")
+                st.info("Create your own intervention timeline")
+                
+                # Display current custom interventions
+                if 'custom_interventions' not in st.session_state:
+                    st.session_state.custom_interventions = []
+                
+                if st.session_state.custom_interventions:
+                    st.markdown("##### Current Schedule")
+                    for i, interv in enumerate(st.session_state.custom_interventions):
+                        col1, col2, col3 = st.columns([1, 2, 1])
+                        with col1:
+                            st.write(f"**Day {interv['day']}**")
+                        with col2:
+                            st.write(f"{interv['type']}: {interv['params']}")
+                        with col3:
+                            if st.button(f"Remove {i}", key=f"remove_{i}"):
+                                st.session_state.custom_interventions.pop(i)
+                                st.rerun()
+                else:
+                    st.info("No custom interventions added yet.")
+                
+                # Separate form to add interventions (can't have button inside main form)
+                st.markdown("---")
+                st.markdown("##### Add New Intervention")
+                with st.form("add_intervention_form"):
+                    col_a, col_b, col_c = st.columns([2, 2, 2])
+                    with col_a:
+                        new_interv_day = st.number_input("Day", min_value=0, max_value=365, value=30, key="new_day")
+                    with col_b:
+                        new_interv_type = st.selectbox(
+                            "Type",
+                            ["mask_mandate", "social_distancing", "vaccination", "testing", 
+                             "lockdown", "travel_restrictions", "reopen"],
+                            index=0,
+                            key="new_type"
+                        )
+                    with col_c:
+                        new_interv_params = st.text_input("Parameters (JSON)", 
+                                                        value='{"efficacy": 0.5, "compliance": 0.7}',
+                                                        key="new_params")
+                    
+                    add_submitted = st.form_submit_button("Add Intervention")
+                    
+                    if add_submitted:
+                        try:
+                            params = json.loads(new_interv_params)
+                            st.session_state.custom_interventions.append({
+                                'day': new_interv_day,
+                                'type': new_interv_type,
+                                'params': params
+                            })
+                            st.success("Added!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Invalid JSON: {str(e)}")
+            
+            # ========== SECTION 4: SIMULATION SETTINGS ==========
+            st.markdown("""
+            <div class="param-section advanced-params">
+                <h4>⚡ 4. Simulation & Animation Settings</h4>
+                Configure simulation execution and visualization
+            </div>
+            """, unsafe_allow_html=True)
+            
+            sim_col1, sim_col2 = st.columns(2)
+            
+            with sim_col1:
+                st.markdown("#### Animation Settings")
+                
+                animate_simulation = st.checkbox(
+                    "**Enable Animation Recording**",
+                    value=True,
+                    help="Record simulation states for animation"
+                )
+                
+                if animate_simulation:
+                    animation_step = st.slider(
+                        "**Animation Step Size**",
+                        min_value=1,
+                        max_value=10,
+                        value=2,
+                        step=1,
+                        help="Days between animation frames"
+                    )
+                else:
+                    animation_step = 1
+                
+                save_checkpoints = st.checkbox(
+                    "**Save Simulation Checkpoints**",
+                    value=True,
+                    help="Save intermediate states for restarting simulations"
+                )
+            
+            with sim_col2:
+                st.markdown("#### Advanced Settings")
+                
+                show_progress = st.checkbox(
+                    "**Show Progress Bar**",
+                    value=True
+                )
+                
+                random_seed = st.number_input(
+                    "**Random Seed**",
+                    min_value=0,
+                    max_value=10000,
+                    value=42,
+                    step=1,
+                    help="For reproducible simulations"
+                )
+                
+                save_results = st.checkbox(
+                    "**Save Results to File**",
+                    value=True
+                )
+            
+            # ========== RUN SIMULATION ==========
             st.markdown("---")
-            st.markdown("### 🎬 Animation Settings")
+            st.markdown("### 🚀 Ready to Run Simulation")
             
-            animate_simulation = st.checkbox(
-                "Enable Animation Recording",
-                value=True,
-                help="Record simulation states for animation"
-            )
+            # Configuration summary
+            with st.expander("📋 Configuration Summary", expanded=True):
+                sum_col1, sum_col2, sum_col3 = st.columns(3)
+                
+                with sum_col1:
+                    st.markdown("**Network**")
+                    st.caption(f"Population: {population}")
+                    st.caption(f"Type: {network_type}")
+                    if network_params:
+                        for key, val in network_params.items():
+                            if key != 'community_sizes':
+                                st.caption(f"{key}: {val}")
+                
+                with sum_col2:
+                    st.markdown("**Disease**")
+                    st.caption(f"Model: {disease_variant}")
+                    if disease_variant == "custom":
+                        st.caption(f"R₀: {custom_params.get('R0', 'N/A')}")
+                    else:
+                        disease_info = {
+                            "omicron": "R₀: 9.5",
+                            "delta": "R₀: 5.0", 
+                            "alpha": "R₀: 4.0",
+                            "wildtype": "R₀: 2.5",
+                            "influenza": "R₀: 1.3",
+                            "measles": "R₀: 15.0",
+                            "ebola": "R₀: 1.8",
+                            "sars": "R₀: 3.0"
+                        }
+                        st.caption(disease_info.get(disease_variant, ""))
+                    st.caption(f"Initial cases: {n_seed_infections}")
+                
+                with sum_col3:
+                    st.markdown("**Interventions**")
+                    st.caption(f"Scenario: {intervention_scenario}")
+                    st.caption(f"Duration: {simulation_days} days")
+                    if animate_simulation:
+                        st.caption(f"Animation: Enabled (step: {animation_step})")
             
-            animation_step = st.slider(
-                "Animation Step Size",
-                min_value=1,
-                max_value=10,
-                value=2,
-                step=1,
-                help="Days between animation frames"
-            )
-            
-            # Run button
-            st.markdown("---")
-            submitted = st.form_submit_button(
-                "🚀 Run Simulation",
-                type="primary",
-                use_container_width=True
-            )
+            # Run button (form submit button)
+            run_col1, run_col2, run_col3 = st.columns([1, 2, 1])
+            with run_col2:
+                submitted = st.form_submit_button(
+                    "🚀 **RUN SIMULATION NOW**",
+                    type="primary",
+                    use_container_width=True
+                )
         
+        # Handle form submission
         if submitted:
-            # Store parameters
+            # Store all parameters
             st.session_state.simulation_params = {
                 'population': population,
                 'network_type': network_type,
@@ -606,15 +1239,30 @@ class PandemicDashboard:
                 'seed_method': seed_method,
                 'simulation_days': simulation_days,
                 'intervention_scenario': intervention_scenario,
+                'base_compliance': base_compliance,
+                'mask_efficacy': mask_efficacy,
+                'mask_compliance': mask_compliance,
+                'distancing_effect': distancing_effect,
+                'distancing_compliance': distancing_compliance,
                 'vaccination_rate': vaccination_rate,
-                'compliance_rate': compliance_rate,
+                'vaccine_efficacy': vaccine_efficacy,
+                'vaccination_priority': vaccination_priority,
+                'testing_rate': testing_rate,
+                'testing_accuracy': testing_accuracy,
+                'testing_delay': testing_delay,
+                'isolation_compliance': isolation_compliance,
+                'lockdown_strictness': lockdown_strictness,
+                'lockdown_duration': lockdown_duration,
                 'animate_simulation': animate_simulation,
-                'animation_step': animation_step
+                'animation_step': animation_step,
+                'show_progress': show_progress,
+                'random_seed': random_seed,
+                'save_results': save_results,
+                'custom_interventions': st.session_state.custom_interventions if intervention_scenario == 'custom' else []
             }
             
             # Run the simulation
             self._run_simulation(st.session_state.simulation_params)
-            st.rerun()
     
     def _run_example_simulation(self):
         """Run an example simulation with default parameters"""
@@ -637,12 +1285,18 @@ class PandemicDashboard:
                 
                 # Run simulation WITH checkpoints for animation
                 if hasattr(simulator, 'run_with_animation'):
-                    # FIX: Remove show_progress parameter
-                    history, checkpoints = simulator.run_with_animation(
-                        days=60,
-                        save_checkpoints=True,
-                        checkpoint_interval=2
-                    )
+                    # Remove show_progress parameter if it causes issues
+                    try:
+                        history, checkpoints = simulator.run_with_animation(
+                            days=60,
+                            save_checkpoints=True,
+                            checkpoint_interval=2
+                        )
+                    except TypeError:
+                        # Fallback if run_with_animation doesn't accept save_checkpoints
+                        history = simulator.run(days=60, show_progress=False)
+                        checkpoints = {}
+                    
                     simulator.checkpoints = checkpoints
                     st.session_state.checkpoints = checkpoints
                 else:
@@ -683,21 +1337,29 @@ class PandemicDashboard:
                 generator = UltimateNetworkGenerator(population=params['population'])
                 
                 network_type = params['network_type']
+                network_params = params['network_params']
+                
                 if network_type == "erdos_renyi":
-                    G = generator.erdos_renyi(p=params['network_params'].get('erdos_p', 0.01))
+                    G = generator.erdos_renyi(p=network_params.get('erdos_p', 0.01))
                 elif network_type == "watts_strogatz":
                     G = generator.watts_strogatz(
-                        k=params['network_params'].get('watts_k', 8),
-                        p=params['network_params'].get('watts_p', 0.3)
+                        k=network_params.get('watts_k', 8),
+                        p=network_params.get('watts_p', 0.3)
                     )
                 elif network_type == "barabasi_albert":
-                    G = generator.barabasi_albert(m=params['network_params'].get('barabasi_m', 3))
+                    G = generator.barabasi_albert(m=network_params.get('barabasi_m', 3))
                 elif network_type == "stochastic_block":
-                    community_sizes = [params['population']//4] * 4
+                    community_sizes = network_params.get('community_sizes', [params['population']//4] * 4)
                     G = generator.stochastic_block(
                         community_sizes,
-                        intra_prob=params['network_params'].get('block_intra', 0.15),
-                        inter_prob=params['network_params'].get('block_inter', 0.01)
+                        intra_prob=network_params.get('block_intra', 0.15),
+                        inter_prob=network_params.get('block_inter', 0.01)
+                    )
+                elif network_type == "hybrid_multilayer":
+                    G = generator.hybrid_multilayer(
+                        school_p=network_params.get('school_p', 0.8),
+                        workplace_p=network_params.get('workplace_p', 0.6),
+                        community_p=network_params.get('community_p', 0.4)
                     )
                 else:
                     G = generator.hybrid_multilayer()
@@ -725,21 +1387,26 @@ class PandemicDashboard:
                 st.session_state.simulation_complete = False
                 
                 # Run simulation with checkpoints if animation enabled
+                run_days = params['simulation_days']
+                
                 if params['animate_simulation'] and hasattr(simulator, 'run_with_animation'):
-                    with st.spinner(f"Running {params['simulation_days']}-day simulation with animation..."):
-                        # FIX: Remove show_progress parameter
-                        history, checkpoints = simulator.run_with_animation(
-                            days=params['simulation_days'],
-                            save_checkpoints=True,
-                            checkpoint_interval=params['animation_step']
-                        )
-                        simulator.checkpoints = checkpoints
-                        st.session_state.checkpoints = checkpoints
+                    with st.spinner(f"Running {run_days}-day simulation with animation..."):
+                        try:
+                            history, checkpoints = simulator.run_with_animation(
+                                days=run_days,
+                                save_checkpoints=True,
+                                checkpoint_interval=params['animation_step']
+                            )
+                            simulator.checkpoints = checkpoints
+                            st.session_state.checkpoints = checkpoints
+                        except TypeError as e:
+                            st.warning(f"Animation checkpointing failed: {e}. Running without checkpoints.")
+                            history = simulator.run(days=run_days, show_progress=False)
                 else:
-                    with st.spinner(f"Running {params['simulation_days']}-day simulation..."):
+                    with st.spinner(f"Running {run_days}-day simulation..."):
                         history = simulator.run(
-                            days=params['simulation_days'],
-                            show_progress=False
+                            days=run_days,
+                            show_progress=params['show_progress']
                         )
                 
                 st.session_state.simulation_history = history
@@ -828,7 +1495,7 @@ class PandemicDashboard:
         # Analysis options
         analysis_type = st.selectbox(
             "Analysis Type",
-            ["Epidemic Curves", "Network Analysis", "Disease Spread", "Intervention Effects"],
+            ["Epidemic Curves", "Network Analysis", "Disease Spread", "Intervention Effects", "Detailed Statistics"],
             index=0
         )
         
@@ -840,173 +1507,220 @@ class PandemicDashboard:
             self._render_disease_spread_analysis()
         elif analysis_type == "Intervention Effects":
             self._render_intervention_analysis()
+        elif analysis_type == "Detailed Statistics":
+            self._render_detailed_statistics()
     
-    # main_dashboard.py - FIXED VERSION (Plotly subplot fix)
-# Only showing the fixed method - replace the _render_epidemic_curves() method
-
     def _render_epidemic_curves(self):
-        """Render epidemic curves analysis"""
+        """Render epidemic curves analysis - SIMPLIFIED VERSION"""
         history = st.session_state.simulation_history
         if not history:
             st.info("No simulation history available")
             return
         
-        # FIX: Use different subplot specs for pie chart
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=("Disease Dynamics", "Daily New Cases", 
-                        "Healthcare Burden", "State Distribution"),
-            vertical_spacing=0.15,
-            horizontal_spacing=0.15,
-            specs=[
-                [{"type": "xy"}, {"type": "xy"}],
-                [{"type": "xy"}, {"type": "domain"}]  # FIX: domain for pie chart
-            ]
-        )
+        # Create separate plots instead of subplots
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "Disease Dynamics", 
+            "Daily New Cases", 
+            "Healthcare Burden", 
+            "State Distribution"
+        ])
         
-        # Plot 1: Disease Dynamics
-        fig.add_trace(
-            go.Scatter(x=history['time'], y=history['S'], mode='lines', 
-                    name='Susceptible', line=dict(color='green', width=2)),
-            row=1, col=1
-        )
-        fig.add_trace(
-            go.Scatter(x=history['time'], y=history['I'], mode='lines', 
-                    name='Infectious', line=dict(color='red', width=2)),
-            row=1, col=1
-        )
-        fig.add_trace(
-            go.Scatter(x=history['time'], y=history['R'], mode='lines', 
-                    name='Recovered', line=dict(color='blue', width=2)),
-            row=1, col=1
-        )
-        
-        # Plot 2: Daily New Cases
-        if 'new_infections' in history:
-            fig.add_trace(
-                go.Bar(x=history['time'], y=history['new_infections'], 
-                    name='New Cases', marker_color='orange'),
-                row=1, col=2
+        with tab1:
+            # Disease Dynamics
+            fig1 = go.Figure()
+            fig1.add_trace(go.Scatter(
+                x=history['time'], y=history['S'], 
+                mode='lines', name='Susceptible', 
+                line=dict(color='green', width=2)
+            ))
+            fig1.add_trace(go.Scatter(
+                x=history['time'], y=history['I'], 
+                mode='lines', name='Infectious', 
+                line=dict(color='red', width=2)
+            ))
+            fig1.add_trace(go.Scatter(
+                x=history['time'], y=history['R'], 
+                mode='lines', name='Recovered', 
+                line=dict(color='blue', width=2)
+            ))
+            if 'D' in history:
+                fig1.add_trace(go.Scatter(
+                    x=history['time'], y=history['D'], 
+                    mode='lines', name='Deceased', 
+                    line=dict(color='gray', width=2)
+                ))
+            fig1.update_layout(
+                title="Disease Dynamics Over Time",
+                xaxis_title="Days",
+                yaxis_title="Count",
+                template='plotly_white',
+                height=500
             )
+            st.plotly_chart(fig1, use_container_width=True)
         
-        # Plot 3: Healthcare Burden
-        if 'Ih' in history:
-            fig.add_trace(
-                go.Scatter(x=history['time'], y=history['Ih'], mode='lines',
-                        name='Hospitalized', line=dict(color='purple', width=2)),
-                row=2, col=1
-            )
-        
-        # Plot 4: State Distribution (pie chart for final day) - FIXED POSITION
-        if history['time']:
-            final_day = len(history['time']) - 1
-            states = ['S', 'I', 'R', 'D']
-            values = []
-            for state in states:
-                if state in history and len(history[state]) > final_day:
-                    values.append(history[state][final_day])
-                else:
-                    values.append(0)
-            
-            # Only show pie if we have values
-            if sum(values) > 0:
-                fig.add_trace(
-                    go.Pie(labels=states, values=values, 
-                        marker=dict(colors=['green', 'red', 'blue', 'gray']),
-                        name="Final State Distribution"),
-                    row=2, col=2  # FIX: Correct position for domain type
+        with tab2:
+            # Daily New Cases
+            if 'new_infections' in history:
+                fig2 = go.Figure()
+                fig2.add_trace(go.Bar(
+                    x=history['time'], y=history['new_infections'],
+                    name='New Cases', marker_color='orange'
+                ))
+                fig2.update_layout(
+                    title="Daily New Infections",
+                    xaxis_title="Days",
+                    yaxis_title="New Cases",
+                    template='plotly_white',
+                    height=500
                 )
+                st.plotly_chart(fig2, use_container_width=True)
         
-        # Update layout
-        fig.update_layout(
-            height=700, 
-            showlegend=True, 
-            template='plotly_white',
-            title_text="Epidemic Analysis Dashboard"
-        )
+        with tab3:
+            # Healthcare Burden
+            fig3 = go.Figure()
+            if 'Ih' in history:
+                fig3.add_trace(go.Scatter(
+                    x=history['time'], y=history['Ih'],
+                    mode='lines', name='Hospitalized',
+                    line=dict(color='purple', width=2)
+                ))
+            if 'Ic' in history:
+                fig3.add_trace(go.Scatter(
+                    x=history['time'], y=history['Ic'],
+                    mode='lines', name='Critical/ICU',
+                    line=dict(color='black', width=2)
+                ))
+            fig3.update_layout(
+                title="Healthcare System Burden",
+                xaxis_title="Days",
+                yaxis_title="Patients",
+                template='plotly_white',
+                height=500
+            )
+            st.plotly_chart(fig3, use_container_width=True)
         
-        # Update axis labels
-        fig.update_xaxes(title_text="Days", row=1, col=1)
-        fig.update_xaxes(title_text="Days", row=1, col=2)
-        fig.update_xaxes(title_text="Days", row=2, col=1)
-        
-        fig.update_yaxes(title_text="Count", row=1, col=1)
-        fig.update_yaxes(title_text="New Cases", row=1, col=2)
-        fig.update_yaxes(title_text="Hospitalized", row=2, col=1)
-        
-        st.plotly_chart(fig, use_container_width=True)
+        with tab4:
+            # State Distribution (pie chart)
+            if history['time']:
+                final_day = len(history['time']) - 1
+                states = ['S', 'I', 'R', 'D']
+                values = []
+                state_names = {
+                    'S': 'Susceptible',
+                    'I': 'Infectious', 
+                    'R': 'Recovered',
+                    'D': 'Deceased'
+                }
+                
+                for state in states:
+                    if state in history and len(history[state]) > final_day:
+                        values.append(history[state][final_day])
+                    else:
+                        values.append(0)
+                
+                if sum(values) > 0:
+                    fig4 = go.Figure(data=[go.Pie(
+                        labels=[state_names.get(s, s) for s in states],
+                        values=values,
+                        marker=dict(colors=['green', 'red', 'blue', 'gray']),
+                        hole=0.3
+                    )])
+                    fig4.update_layout(
+                        title=f"Final State Distribution (Day {final_day})",
+                        template='plotly_white',
+                        height=500
+                    )
+                    st.plotly_chart(fig4, use_container_width=True)
+                else:
+                    st.info("No data available for final state distribution")
         
         # Summary statistics
         if hasattr(st.session_state.simulator, 'get_summary_stats'):
-            stats = st.session_state.simulator.get_summary_stats()
-            
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Attack Rate", f"{stats.get('attack_rate', 0)*100:.1f}%")
-            with col2:
-                st.metric("Peak Infections", f"{stats.get('peak_infections', 0):.0f}")
-            with col3:
-                st.metric("Total Deaths", f"{stats.get('total_deaths', 0):.0f}")
-            with col4:
-                st.metric("Case Fatality", f"{stats.get('case_fatality_rate', 0)*100:.2f}%")
-        
-        def _render_network_analysis(self):
-            """Render network analysis"""
-            if st.session_state.network_graph is None:
-                st.info("No network available for analysis")
-                return
-            
-            G = st.session_state.network_graph
-            
-            # Calculate network metrics
-            st.markdown("### 📐 Network Metrics")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.metric("Nodes", G.number_of_nodes())
-            with col2:
-                st.metric("Edges", G.number_of_edges())
-            with col3:
-                st.metric("Density", f"{nx.density(G):.4f}")
-            with col4:
-                avg_degree = np.mean([d for _, d in G.degree()])
-                st.metric("Avg Degree", f"{avg_degree:.2f}")
-            
-            # Degree distribution
-            st.markdown("### 📊 Degree Distribution")
-            degrees = [d for _, d in G.degree()]
-            
-            fig = px.histogram(x=degrees, nbins=30, 
-                            labels={'x': 'Degree', 'y': 'Count'},
-                            title='Node Degree Distribution')
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Community detection
-            st.markdown("### 🏘️ Community Structure")
-            
             try:
-                from networkx.algorithms import community
+                stats = st.session_state.simulator.get_summary_stats()
                 
-                # Use greedy modularity communities
-                communities = list(community.greedy_modularity_communities(G))
+                st.markdown("### 📊 Summary Statistics")
+                col1, col2, col3, col4, col5 = st.columns(5)
                 
-                col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Communities", len(communities))
+                    st.metric("Attack Rate", f"{stats.get('attack_rate', 0)*100:.1f}%")
                 with col2:
-                    avg_community_size = np.mean([len(c) for c in communities])
-                    st.metric("Avg Community Size", f"{avg_community_size:.0f}")
-                
-                # Show community sizes distribution
-                community_sizes = [len(c) for c in communities]
-                fig = px.bar(x=list(range(len(community_sizes))), y=community_sizes,
-                            labels={'x': 'Community ID', 'y': 'Size'},
-                            title='Community Sizes')
-                st.plotly_chart(fig, use_container_width=True)
-                
-            except Exception as e:
-                st.info(f"Community detection not available: {e}")
+                    st.metric("Peak Infections", f"{stats.get('peak_infections', 0):.0f}")
+                with col3:
+                    st.metric("Total Deaths", f"{stats.get('total_deaths', 0):.0f}")
+                with col4:
+                    st.metric("Case Fatality", f"{stats.get('case_fatality_rate', 0)*100:.2f}%")
+                with col5:
+                    st.metric("Total Vaccinated", f"{stats.get('total_vaccinated', 0):.0f}")
+            except:
+                pass
+    
+    def _render_network_analysis(self):
+        """Render network analysis"""
+        if st.session_state.network_graph is None:
+            st.info("No network available for analysis")
+            return
+        
+        G = st.session_state.network_graph
+        
+        st.markdown("### 📐 Network Structure Analysis")
+        
+        # Basic metrics
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric("Nodes", G.number_of_nodes())
+        with col2:
+            st.metric("Edges", G.number_of_edges())
+        with col3:
+            st.metric("Density", f"{nx.density(G):.4f}")
+        with col4:
+            degrees = [d for _, d in G.degree()]
+            st.metric("Avg Degree", f"{np.mean(degrees):.2f}")
+        with col5:
+            st.metric("Max Degree", f"{max(degrees):.0f}")
+        
+        # Degree distribution
+        st.markdown("### 📊 Degree Distribution")
+        fig = px.histogram(x=degrees, nbins=30, 
+                          labels={'x': 'Degree', 'y': 'Count'},
+                          title='Node Degree Distribution')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Network visualization
+        st.markdown("### 🌐 Network Visualization")
+        viz_type = st.selectbox("Visualization Type", ["Force-directed", "Circular", "Random"], key="viz_type_network")
+        
+        fig, ax = plt.subplots(figsize=(10, 8))
+        
+        if viz_type == "Force-directed":
+            pos = nx.spring_layout(G, seed=42)
+        elif viz_type == "Circular":
+            pos = nx.circular_layout(G)
+        else:
+            pos = nx.random_layout(G)
+        
+        # Color by degree
+        node_colors = [G.degree(n) for n in G.nodes()]
+        node_sizes = [50 + G.degree(n) * 5 for n in G.nodes()]
+        
+        nx.draw_networkx_nodes(G, pos, node_color=node_colors, 
+                             node_size=node_sizes, cmap=plt.cm.viridis, 
+                             alpha=0.8, ax=ax)
+        nx.draw_networkx_edges(G, pos, alpha=0.2, ax=ax)
+        
+        ax.set_title(f"Network Visualization - {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+        ax.axis('off')
+        
+        # Add colorbar
+        sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, 
+                                 norm=plt.Normalize(vmin=min(node_colors), 
+                                                   vmax=max(node_colors)))
+        sm.set_array([])
+        plt.colorbar(sm, ax=ax, label='Node Degree')
+        
+        st.pyplot(fig)
+        plt.close()
     
     def _render_disease_spread_analysis(self):
         """Render disease spread analysis"""
@@ -1016,18 +1730,14 @@ class PandemicDashboard:
         
         history = st.session_state.simulation_history
         
-        # Infection timeline
-        st.markdown("### 🦠 Infection Timeline")
-        
-        fig = go.Figure()
-        
         # Cumulative infections
+        st.markdown("### 📈 Cumulative Infections")
+        
         if 'total_infected' not in history and 'I' in history and 'R' in history:
             # Calculate cumulative infections
             total_infected = []
             cumulative = 0
             for i in range(len(history['time'])):
-                # New infections = change in I + R
                 if i > 0:
                     new_cases = (history['I'][i] + history['R'][i]) - (history['I'][i-1] + history['R'][i-1])
                     cumulative += max(0, new_cases)
@@ -1036,6 +1746,7 @@ class PandemicDashboard:
             history['total_infected'] = total_infected
         
         if 'total_infected' in history:
+            fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=history['time'], 
                 y=history['total_infected'],
@@ -1043,110 +1754,143 @@ class PandemicDashboard:
                 name='Cumulative Infections',
                 line=dict(color='darkred', width=3)
             ))
+            fig.update_layout(
+                title='Cumulative Infections Over Time',
+                xaxis_title='Days',
+                yaxis_title='Cumulative Infections',
+                template='plotly_white',
+                height=500
+            )
+            st.plotly_chart(fig, use_container_width=True)
         
-        fig.update_layout(
-            title='Cumulative Infections Over Time',
-            xaxis_title='Days',
-            yaxis_title='Cumulative Infections',
-            template='plotly_white'
-        )
+        # Infection rate (R-effective)
+        st.markdown("### 🔄 Effective Reproduction Number (R-effective)")
         
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Transmission network
-        st.markdown("### 🔗 Transmission Network")
-        
-        if hasattr(st.session_state.simulator, 'infection_tree'):
-            try:
-                infection_tree = st.session_state.simulator.get_infection_tree(max_depth=3)
-                
-                if infection_tree:
-                    # Visualize transmission tree
-                    self._visualize_transmission_tree(infection_tree)
-                else:
-                    st.info("No detailed infection tree available")
-            except:
-                st.info("Infection tree data not available")
-        else:
-            st.info("Infection tree data not available")
-    
-    def _visualize_transmission_tree(self, infection_tree):
-        """Visualize infection transmission tree"""
-        # Create hierarchical tree visualization
-        import plotly.graph_objects as go
-        
-        # Flatten tree for visualization
-        nodes = []
-        edges = []
-        node_labels = {}
-        
-        def add_node(node_id, label, depth):
-            nodes.append({
-                'id': node_id,
-                'label': label,
-                'depth': depth
-            })
-            node_labels[node_id] = label
-        
-        def traverse_tree(tree, parent_id=None, depth=0):
-            for node_id, children in tree.items():
-                node_label = f"Node {node_id}"
-                add_node(node_id, node_label, depth)
-                
-                if parent_id is not None:
-                    edges.append({
-                        'from': parent_id,
-                        'to': node_id
-                    })
-                
-                if children:
-                    traverse_tree({child['id']: child.get('children', []) 
-                                 for child in children}, node_id, depth + 1)
-        
-        traverse_tree(infection_tree)
-        
-        # Create network graph
-        fig = go.Figure()
-        
-        # Add edges
-        for edge in edges:
-            fig.add_trace(go.Scatter(
-                x=[edge['from'], edge['to'], None],
-                y=[0, 1, None],  # Simplified layout
-                mode='lines',
-                line=dict(width=1, color='gray'),
-                hoverinfo='none',
-                showlegend=False
-            ))
-        
-        # Add nodes
-        fig.add_trace(go.Scatter(
-            x=[node['id'] for node in nodes],  # Simplified layout
-            y=[node['depth'] for node in nodes],
-            mode='markers+text',
-            marker=dict(size=20, color='red'),
-            text=[node['label'] for node in nodes],
-            textposition="top center",
-            hoverinfo='text',
-            name='Infected Individuals'
-        ))
-        
-        fig.update_layout(
-            title='Infection Transmission Tree',
-            showlegend=False,
-            template='plotly_white',
-            height=400
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        if hasattr(st.session_state.simulator, 'stats') and 'r_effective' in st.session_state.simulator.stats:
+            r_eff = st.session_state.simulator.stats['r_effective']
+            if r_eff:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=list(range(len(r_eff))),
+                    y=r_eff,
+                    mode='lines',
+                    name='R-effective',
+                    line=dict(color='blue', width=2)
+                ))
+                fig.add_hline(y=1.0, line_dash="dash", line_color="red", 
+                            annotation_text="Epidemic Threshold")
+                fig.update_layout(
+                    title='Effective Reproduction Number Over Time',
+                    xaxis_title='Days',
+                    yaxis_title='R-effective',
+                    template='plotly_white',
+                    height=400
+                )
+                st.plotly_chart(fig, use_container_width=True)
     
     def _render_intervention_analysis(self):
         """Render intervention effects analysis"""
-        st.info("Intervention analysis - Run simulation with different interventions to compare")
+        st.markdown("### 🛡️ Intervention Analysis")
         
-        # Placeholder for intervention comparison
-        if st.button("Run Intervention Comparison", use_container_width=True):
-            st.info("This would run simulations with different intervention scenarios")
+        if not st.session_state.simulation_history:
+            st.info("No simulation history available")
+            return
+        
+        history = st.session_state.simulation_history
+        
+        # Show intervention effects if available
+        if 'interventions' in history and len(history['interventions']) > 0:
+            # Extract intervention days
+            intervention_days = []
+            intervention_types = []
+            
+            for i, interv_dict in enumerate(history['interventions']):
+                if interv_dict:  # Not empty
+                    # Find first intervention day
+                    for day, interv_list in enumerate(history['interventions']):
+                        if interv_list:
+                            intervention_days.append(day)
+                            intervention_types.append(list(interv_list.keys())[0])
+                            break
+            
+            if intervention_days:
+                fig = go.Figure()
+                
+                # Plot infections
+                fig.add_trace(go.Scatter(
+                    x=history['time'],
+                    y=history['I'],
+                    mode='lines',
+                    name='Infectious',
+                    line=dict(color='red', width=2)
+                ))
+                
+                # Add intervention markers
+                for day, interv_type in zip(intervention_days, intervention_types):
+                    fig.add_vline(x=day, line_dash="dash", line_color="green",
+                                annotation_text=interv_type, annotation_position="top")
+                
+                fig.update_layout(
+                    title='Intervention Effects on Infections',
+                    xaxis_title='Days',
+                    yaxis_title='Infectious Individuals',
+                    template='plotly_white',
+                    height=500
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+        # Comparative analysis section
+        st.markdown("#### 📊 Comparative Analysis")
+        st.info("Run multiple simulations with different interventions to compare outcomes")
+        
+        if st.button("Run Intervention Comparison Study", use_container_width=True, key="intervention_compare"):
+            st.info("This would run multiple simulations with different intervention scenarios")
+            st.info("Feature coming soon: Compare mask mandates vs. social distancing vs. vaccination")
+    
+    def _render_detailed_statistics(self):
+        """Render detailed statistics"""
+        if not st.session_state.simulator:
+            st.info("No simulator available")
+            return
+        
+        try:
+            stats = st.session_state.simulator.get_summary_stats()
+            
+            st.markdown("### 📋 Complete Simulation Statistics")
+            
+            # Create metrics in columns
+            metric_groups = [
+                ["initial_population", "final_susceptible", "total_infected", "total_recovered", "total_deaths"],
+                ["peak_infections", "peak_day", "attack_rate", "case_fatality_rate", "total_vaccinated"],
+                ["total_hospitalized", "total_days", "final_r_effective", "avg_daily_cases", "doubling_time"]
+            ]
+            
+            for group in metric_groups:
+                cols = st.columns(len(group))
+                for i, metric in enumerate(group):
+                    with cols[i]:
+                        if metric in stats:
+                            value = stats[metric]
+                            if isinstance(value, float):
+                                if 'rate' in metric:
+                                    display = f"{value:.2%}"
+                                else:
+                                    display = f"{value:.2f}"
+                            else:
+                                display = f"{value:,}"
+                            
+                            # Format metric name
+                            name = metric.replace('_', ' ').title()
+                            st.metric(name, display)
+            
+            # Detailed data table
+            st.markdown("### 📈 Time Series Summary")
+            if st.session_state.simulation_history:
+                df = pd.DataFrame(st.session_state.simulation_history)
+                st.dataframe(df.describe(), use_container_width=True)
+                
+        except Exception as e:
+            st.error(f"Could not load statistics: {e}")
     
     # ==================== TAB 4: VISUALIZATION ====================
     
@@ -1160,47 +1904,25 @@ class PandemicDashboard:
             return
         
         # Visualization controls
-        viz_col1, viz_col2 = st.columns([2, 1])
+        viz_type = st.selectbox(
+            "Visualization Type",
+            ["Network Spread Animation", "Static Network", "3D Network", "Heatmap", "Timeline"],
+            index=0,
+            key="viz_type_main"
+        )
         
-        with viz_col1:
-            viz_type = st.selectbox(
-                "Visualization Type",
-                ["Network Spread Animation", "Static Network", "Heatmap", "3D Network"],
-                index=0
-            )
-        
-        with viz_col2:
-            if viz_type == "Network Spread Animation":
-                if st.session_state.animation_frames and len(st.session_state.animation_frames) > 1:
-                    current_day = st.slider(
-                        "Animation Day",
-                        0,
-                        len(st.session_state.animation_frames) - 1,
-                        min(st.session_state.current_day, len(st.session_state.animation_frames) - 1)
-                    )
-                    st.session_state.current_day = current_day
-                elif st.session_state.simulation_history:
-                    max_day = len(st.session_state.simulation_history['time']) - 1 if st.session_state.simulation_history else 0
-                    if max_day > 0:
-                        current_day = st.slider(
-                            "Day to Visualize",
-                            0,
-                            max_day,
-                            min(st.session_state.current_day, max_day)
-                        )
-                        st.session_state.current_day = current_day
-        
-        # Generate visualization
         if viz_type == "Network Spread Animation":
-            self._render_network_spread_animation(st.session_state.current_day)
+            self._render_network_spread_animation()
         elif viz_type == "Static Network":
             self._render_static_network()
-        elif viz_type == "Heatmap":
-            self._render_heatmap()
         elif viz_type == "3D Network":
             self._render_3d_network()
+        elif viz_type == "Heatmap":
+            self._render_heatmap()
+        elif viz_type == "Timeline":
+            self._render_timeline()
     
-    def _render_network_spread_animation(self, current_day):
+    def _render_network_spread_animation(self):
         """Render animated network spread visualization"""
         st.markdown("### 🦠 Disease Spread Through Network")
         
@@ -1214,12 +1936,22 @@ class PandemicDashboard:
                 st.info("Run a simulation first to see animation")
                 return
         
-        # Get frame - safely handle index
-        if current_day >= len(st.session_state.animation_frames):
-            current_day = len(st.session_state.animation_frames) - 1
+        # Get current day
+        if len(st.session_state.animation_frames) > 1:
+            current_day = st.slider(
+                "Select Day",
+                0,
+                len(st.session_state.animation_frames) - 1,
+                min(st.session_state.current_day, len(st.session_state.animation_frames) - 1),
+                key="animation_day_slider"
+            )
             st.session_state.current_day = current_day
-            
-        frame = st.session_state.animation_frames[current_day]
+        else:
+            current_day = 0
+        
+        # Get frame
+        frame_idx = min(current_day, len(st.session_state.animation_frames) - 1)
+        frame = st.session_state.animation_frames[frame_idx]
         
         # Create visualization
         col1, col2 = st.columns([3, 1])
@@ -1228,26 +1960,17 @@ class PandemicDashboard:
             # Network visualization
             st.markdown(f"#### Network State - Day {frame['day']}")
             
-            # Create matplotlib figure
             fig, ax = plt.subplots(figsize=(12, 10))
             
             if hasattr(st.session_state.animator, 'node_positions'):
                 pos = st.session_state.animator.node_positions
             else:
-                # Compute layout if not available
                 pos = nx.spring_layout(st.session_state.network_graph, seed=42)
-                st.session_state.animator.node_positions = pos
             
             G = st.session_state.network_graph
             
-            # Draw edges (light gray, thin)
-            nx.draw_networkx_edges(
-                G, pos, 
-                ax=ax, 
-                alpha=0.1, 
-                width=0.3,
-                edge_color='gray'
-            )
+            # Draw edges
+            nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.1, width=0.5, edge_color='gray')
             
             # Draw nodes with colors from frame
             node_colors = frame['node_colors']
@@ -1263,7 +1986,6 @@ class PandemicDashboard:
             
             # Draw each color group
             for color, nodes in color_groups.items():
-                # Get sizes for these nodes
                 sizes = []
                 for node in nodes:
                     node_idx = list(G.nodes()).index(node)
@@ -1282,7 +2004,6 @@ class PandemicDashboard:
                     linewidths=0.5
                 )
             
-            # Add title and legend
             ax.set_title(f"Day {frame['day']} - Disease Spread Visualization", fontsize=16, fontweight='bold')
             ax.axis('off')
             
@@ -1305,18 +2026,14 @@ class PandemicDashboard:
             # Animation controls
             if len(st.session_state.animation_frames) > 1:
                 st.markdown("#### 🎛️ Animation Controls")
-                anim_col1, anim_col2, anim_col3 = st.columns(3)
+                anim_col1, anim_col2 = st.columns(2)
                 
                 with anim_col1:
-                    if st.button("▶️ Play Animation", use_container_width=True):
+                    if st.button("▶️ Play Animation", use_container_width=True, key="play_anim_btn"):
                         self._play_animation_in_place()
                 
                 with anim_col2:
-                    if st.button("⏸️ Pause", use_container_width=True):
-                        st.info("Animation paused")
-                
-                with anim_col3:
-                    speed = st.slider("Speed", 0.25, 4.0, 1.0, 0.25)
+                    speed = st.slider("Speed", 0.25, 4.0, 1.0, 0.25, key="anim_speed")
         
         with col2:
             # Statistics
@@ -1324,20 +2041,18 @@ class PandemicDashboard:
             
             stats = frame['statistics']
             
-            # Key metrics
             metric_cols = st.columns(2)
             
             with metric_cols[0]:
-                st.metric("Susceptible", stats.get('S', 0))
-                st.metric("Exposed", stats.get('E', 0))
+                st.metric("Susceptible", stats.get('S', 0), key="stat_s")
+                st.metric("Exposed", stats.get('E', 0), key="stat_e")
             
             with metric_cols[1]:
-                st.metric("Infectious", stats.get('I', 0))
-                st.metric("Recovered", stats.get('R', 0))
+                st.metric("Infectious", stats.get('I', 0), key="stat_i")
+                st.metric("Recovered", stats.get('R', 0), key="stat_r")
             
-            # New cases
             if 'new_cases' in stats:
-                st.metric("New Cases", stats.get('new_cases', 0))
+                st.metric("New Cases", stats.get('new_cases', 0), key="stat_new")
             
             # State distribution
             st.markdown("#### 📈 State Distribution")
@@ -1347,10 +2062,8 @@ class PandemicDashboard:
                 state_counts[state] = state_counts.get(state, 0) + 1
             
             if state_counts:
-                # Create pie chart
                 fig_pie, ax_pie = plt.subplots(figsize=(6, 6))
                 
-                # Map state codes to readable names
                 state_names = {
                     'S': 'Susceptible',
                     'E': 'Exposed',
@@ -1399,7 +2112,7 @@ class PandemicDashboard:
                 self._display_animation_frame_simple(frame, i)
             
             # Wait before next frame
-            time.sleep(0.3)  # Adjust speed as needed
+            time.sleep(0.3)
         
         # Clear placeholder when done
         animation_placeholder.empty()
@@ -1409,7 +2122,6 @@ class PandemicDashboard:
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            # Simple network visualization
             fig, ax = plt.subplots(figsize=(10, 8))
             
             if hasattr(st.session_state.animator, 'node_positions'):
@@ -1422,10 +2134,7 @@ class PandemicDashboard:
             # Draw network
             node_colors = frame['node_colors']
             
-            # Draw edges
             nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.1, width=0.5)
-            
-            # Draw nodes
             nx.draw_networkx_nodes(G, pos, 
                                   node_color=node_colors,
                                   node_size=50,
@@ -1438,11 +2147,10 @@ class PandemicDashboard:
             plt.close()
         
         with col2:
-            # Simple stats
             stats = frame['statistics']
-            st.metric("Day", frame['day'])
-            st.metric("Infectious", stats.get('I', 0))
-            st.metric("New Cases", stats.get('new_cases', 0))
+            st.metric("Day", frame['day'], key="simple_day")
+            st.metric("Infectious", stats.get('I', 0), key="simple_i")
+            st.metric("New Cases", stats.get('new_cases', 0), key="simple_new")
     
     def _render_static_network(self):
         """Render static network visualization"""
@@ -1454,18 +2162,24 @@ class PandemicDashboard:
         
         st.markdown("### 🌐 Network Structure")
         
-        # Network visualization options
-        layout_type = st.selectbox(
-            "Layout Algorithm",
-            ["spring", "circular", "kamada_kawai", "random"],
-            index=0
-        )
+        # Visualization options
+        col1, col2 = st.columns(2)
         
-        node_color_by = st.selectbox(
-            "Color Nodes By",
-            ["degree", "age", "mobility", "state"],
-            index=0
-        )
+        with col1:
+            layout_type = st.selectbox(
+                "Layout Algorithm",
+                ["spring", "circular", "kamada_kawai", "spectral", "random"],
+                index=0,
+                key="static_layout"
+            )
+        
+        with col2:
+            color_by = st.selectbox(
+                "Color Nodes By",
+                ["degree", "age", "mobility", "state", "community"],
+                index=0,
+                key="static_color"
+            )
         
         # Compute layout
         if layout_type == "spring":
@@ -1474,6 +2188,8 @@ class PandemicDashboard:
             pos = nx.circular_layout(G)
         elif layout_type == "kamada_kawai":
             pos = nx.kamada_kawai_layout(G)
+        elif layout_type == "spectral":
+            pos = nx.spectral_layout(G)
         else:
             pos = nx.random_layout(G)
         
@@ -1481,23 +2197,41 @@ class PandemicDashboard:
         fig, ax = plt.subplots(figsize=(12, 10))
         
         # Determine node colors
-        if node_color_by == "degree":
-            degrees = dict(G.degree())
-            node_colors = [degrees[n] for n in G.nodes()]
+        if color_by == "degree":
+            node_colors = [G.degree(n) for n in G.nodes()]
             cmap = plt.cm.viridis
-        elif node_color_by == "age":
+            colorbar_label = "Node Degree"
+        elif color_by == "age":
             node_colors = [G.nodes[n].get('age', 40) for n in G.nodes()]
             cmap = plt.cm.plasma
-        elif node_color_by == "mobility":
+            colorbar_label = "Age"
+        elif color_by == "mobility":
             node_colors = [G.nodes[n].get('mobility', 0.5) for n in G.nodes()]
             cmap = plt.cm.coolwarm
-        else:  # state
+            colorbar_label = "Mobility"
+        elif color_by == "state":
             node_colors = []
             for n in G.nodes():
                 state = G.nodes[n].get('state', 'S')
                 color_map = {'S': 0, 'E': 1, 'I': 2, 'R': 3, 'D': 4, 'V': 5}
                 node_colors.append(color_map.get(state, 0))
             cmap = plt.cm.Set3
+            colorbar_label = "State"
+        else:  # community
+            try:
+                from networkx.algorithms import community
+                communities = list(community.greedy_modularity_communities(G))
+                community_map = {}
+                for i, comm in enumerate(communities):
+                    for node in comm:
+                        community_map[node] = i
+                node_colors = [community_map.get(n, 0) for n in G.nodes()]
+                cmap = plt.cm.tab20
+                colorbar_label = "Community"
+            except:
+                node_colors = [0] * len(G.nodes())
+                cmap = plt.cm.Set3
+                colorbar_label = "Default"
         
         # Draw network
         nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.2, width=0.5)
@@ -1515,12 +2249,73 @@ class PandemicDashboard:
         ax.set_title(f"Network Visualization - {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
         ax.axis('off')
         
-        # Add colorbar if numeric
-        if node_color_by in ["degree", "age", "mobility"]:
-            plt.colorbar(nodes, ax=ax, label=node_color_by.capitalize())
+        # Add colorbar
+        plt.colorbar(nodes, ax=ax, label=colorbar_label)
         
         st.pyplot(fig)
         plt.close()
+    
+    def _render_3d_network(self):
+        """Render 3D network visualization"""
+        st.info("3D Network Visualization")
+        
+        if st.session_state.network_graph:
+            G = st.session_state.network_graph
+            
+            # Create 3D positions
+            pos_3d = {}
+            for node in G.nodes():
+                pos_3d[node] = (
+                    np.random.random(),
+                    np.random.random(),
+                    np.random.random()
+                )
+            
+            # Create 3D scatter plot
+            x_vals, y_vals, z_vals = [], [], []
+            node_colors = []
+            
+            for node in G.nodes():
+                x, y, z = pos_3d[node]
+                x_vals.append(x)
+                y_vals.append(y)
+                z_vals.append(z)
+                
+                # Color by state if available
+                state = G.nodes[node].get('state', 'S')
+                color_map = {
+                    'S': 'green',
+                    'E': 'orange',
+                    'I': 'red',
+                    'R': 'blue',
+                    'D': 'gray',
+                    'V': 'purple'
+                }
+                node_colors.append(color_map.get(state, 'blue'))
+            
+            fig = go.Figure(data=[go.Scatter3d(
+                x=x_vals,
+                y=y_vals,
+                z=z_vals,
+                mode='markers',
+                marker=dict(
+                    size=5,
+                    color=node_colors,
+                    opacity=0.8
+                )
+            )])
+            
+            fig.update_layout(
+                title='3D Network Visualization',
+                scene=dict(
+                    xaxis_title='X',
+                    yaxis_title='Y',
+                    zaxis_title='Z'
+                ),
+                height=600
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
     
     def _render_heatmap(self):
         """Render heatmap visualization"""
@@ -1531,7 +2326,7 @@ class PandemicDashboard:
         
         history = st.session_state.simulation_history
         
-        # Create a heatmap of infections over time
+        # Create heatmap of infections over time
         fig = go.Figure(data=go.Heatmap(
             z=[history['I']],
             x=history['time'],
@@ -1549,54 +2344,44 @@ class PandemicDashboard:
         
         st.plotly_chart(fig, use_container_width=True)
     
-    def _render_3d_network(self):
-        """Render 3D network visualization"""
-        st.info("3D Network Visualization")
+    def _render_timeline(self):
+        """Render timeline visualization"""
+        st.info("Timeline visualization showing disease progression")
         
-        # Simple 3D visualization using plotly
-        if st.session_state.network_graph:
-            G = st.session_state.network_graph
-            
-            # Create 3D positions
-            pos_3d = {}
-            for node in G.nodes():
-                pos_3d[node] = (
-                    np.random.random(),
-                    np.random.random(),
-                    np.random.random()
-                )
-            
-            # Create 3D scatter plot
-            x_vals, y_vals, z_vals = [], [], []
-            for node in G.nodes():
-                x, y, z = pos_3d[node]
-                x_vals.append(x)
-                y_vals.append(y)
-                z_vals.append(z)
-            
-            fig = go.Figure(data=[go.Scatter3d(
-                x=x_vals,
-                y=y_vals,
-                z=z_vals,
-                mode='markers',
-                marker=dict(
-                    size=5,
-                    color='blue',
-                    opacity=0.8
-                )
-            )])
-            
-            fig.update_layout(
-                title='3D Network Visualization',
-                scene=dict(
-                    xaxis_title='X',
-                    yaxis_title='Y',
-                    zaxis_title='Z'
-                ),
-                height=600
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
+        if not st.session_state.simulation_history:
+            return
+        
+        history = st.session_state.simulation_history
+        
+        # Create timeline with multiple traces
+        fig = go.Figure()
+        
+        traces = [
+            ('S', 'Susceptible', 'green'),
+            ('I', 'Infectious', 'red'),
+            ('R', 'Recovered', 'blue')
+        ]
+        
+        for key, name, color in traces:
+            if key in history:
+                fig.add_trace(go.Scatter(
+                    x=history['time'],
+                    y=history[key],
+                    mode='lines',
+                    name=name,
+                    line=dict(color=color, width=2)
+                ))
+        
+        fig.update_layout(
+            title='Disease Timeline',
+            xaxis_title='Days',
+            yaxis_title='Count',
+            template='plotly_white',
+            height=500,
+            hovermode='x unified'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
     
     # ==================== TAB 5: ANIMATION ====================
     
@@ -1612,45 +2397,56 @@ class PandemicDashboard:
         if not st.session_state.animation_ready:
             st.warning("⚠️ Animation not prepared yet.")
             
-            if st.button("🎬 Prepare Animation Now", type="primary", use_container_width=True):
+            if st.button("🎬 Prepare Animation Now", type="primary", use_container_width=True, key="anim_prepare_btn"):
                 self._prepare_animation()
                 st.rerun()
             return
         
-        # Animation controls
-        st.markdown("### 🎛️ Animation Export")
+        # Animation export options
+        st.markdown("### 🎛️ Animation Export Options")
         
-        anim_col1, anim_col2, anim_col3 = st.columns(3)
+        export_type = st.selectbox(
+            "Export Format",
+            ["GIF Video", "HTML Interactive", "Frame Images", "MP4 Video", "WebM Video"],
+            index=0,
+            key="export_type"
+        )
         
-        with anim_col1:
-            animation_type = st.selectbox(
-                "Export Format",
-                ["GIF Video", "HTML Interactive", "Frame Images", "MP4 Video"],
-                index=0
-            )
+        col1, col2, col3 = st.columns(3)
         
-        with anim_col2:
-            fps = st.slider("Frames Per Second", 1, 30, 10)
+        with col1:
+            fps = st.slider("Frames Per Second", 1, 30, 10, key="fps_slider")
         
-        with anim_col3:
+        with col2:
             quality = st.select_slider(
                 "Quality",
                 options=["Low", "Medium", "High"],
-                value="Medium"
+                value="Medium",
+                key="quality_slider"
             )
         
-        # Generate buttons
-        if st.button("🎥 Generate Animation", type="primary", use_container_width=True):
-            if animation_type == "GIF Video":
-                self._generate_gif_animation(fps, quality)
-            elif animation_type == "HTML Interactive":
-                self._generate_html_animation()
-            elif animation_type == "Frame Images":
-                self._export_animation_frames()
-            elif animation_type == "MP4 Video":
-                self._generate_mp4_animation(fps, quality)
+        with col3:
+            resolution = st.selectbox(
+                "Resolution",
+                ["640x480", "1280x720", "1920x1080"],
+                index=1,
+                key="resolution_select"
+            )
         
-        # Live animation preview
+        # Generate button
+        if st.button("🎥 Generate Animation", type="primary", use_container_width=True, key="generate_anim_btn"):
+            if export_type == "GIF Video":
+                self._generate_gif_animation(fps, quality)
+            elif export_type == "HTML Interactive":
+                self._generate_html_animation()
+            elif export_type == "Frame Images":
+                self._export_animation_frames()
+            elif export_type == "MP4 Video":
+                self._generate_mp4_animation(fps, quality, resolution)
+            elif export_type == "WebM Video":
+                self._generate_webm_animation(fps, quality, resolution)
+        
+        # Live preview
         st.markdown("---")
         st.markdown("### 👁️ Live Preview")
         
@@ -1675,10 +2471,10 @@ class PandemicDashboard:
         play_col1, play_col2 = st.columns(2)
         
         with play_col1:
-            auto_play = st.button("▶️ Play in Streamlit", use_container_width=True)
+            auto_play = st.button("▶️ Play in Streamlit", use_container_width=True, key="autoplay_btn")
         
         with play_col2:
-            delay = st.slider("Frame Delay (ms)", 100, 2000, 500, 100)
+            delay = st.slider("Frame Delay (ms)", 100, 2000, 500, 100, key="delay_slider")
         
         if auto_play:
             self._play_streamlit_animation(delay)
@@ -1688,7 +2484,6 @@ class PandemicDashboard:
         if not st.session_state.animation_frames:
             return
         
-        # Safely handle frame index
         if frame_idx >= len(st.session_state.animation_frames):
             frame_idx = len(st.session_state.animation_frames) - 1
         
@@ -1697,7 +2492,6 @@ class PandemicDashboard:
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            # Create network visualization
             fig, ax = plt.subplots(figsize=(12, 10))
             
             if hasattr(st.session_state.animator, 'node_positions'):
@@ -1707,20 +2501,12 @@ class PandemicDashboard:
             
             G = st.session_state.network_graph
             
-            # Draw edges (light gray, thin)
-            nx.draw_networkx_edges(
-                G, pos, 
-                ax=ax, 
-                alpha=0.1, 
-                width=0.3,
-                edge_color='gray'
-            )
+            # Draw network
+            nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.1, width=0.3, edge_color='gray')
             
-            # Draw nodes with colors from frame
             node_colors = frame['node_colors']
             node_sizes = frame.get('node_sizes', [50] * len(G.nodes()))
             
-            # Group nodes by color for efficient drawing
             color_groups = {}
             for i, node in enumerate(G.nodes()):
                 color = node_colors[i] if i < len(node_colors) else '#CCCCCC'
@@ -1728,9 +2514,7 @@ class PandemicDashboard:
                     color_groups[color] = []
                 color_groups[color].append(node)
             
-            # Draw each color group
             for color, nodes in color_groups.items():
-                # Get sizes for these nodes
                 sizes = []
                 for node in nodes:
                     node_idx = list(G.nodes()).index(node)
@@ -1752,7 +2536,6 @@ class PandemicDashboard:
             ax.set_title(f"Day {frame['day']} - Disease Spread", fontsize=16, fontweight='bold')
             ax.axis('off')
             
-            # Add legend
             from matplotlib.patches import Patch
             legend_elements = [
                 Patch(facecolor='#4CAF50', label='Susceptible'),
@@ -1768,17 +2551,15 @@ class PandemicDashboard:
         with col2:
             st.markdown(f"### Day {frame['day']}")
             
-            # Display statistics
             stats = frame['statistics']
             
-            st.metric("Susceptible", stats.get('S', 0))
-            st.metric("Infectious", stats.get('I', 0))
-            st.metric("Recovered", stats.get('R', 0))
+            st.metric("Susceptible", stats.get('S', 0), key="frame_s")
+            st.metric("Infectious", stats.get('I', 0), key="frame_i")
+            st.metric("Recovered", stats.get('R', 0), key="frame_r")
             
             if 'new_cases' in stats:
-                st.metric("New Cases", stats.get('new_cases', 0))
+                st.metric("New Cases", stats.get('new_cases', 0), key="frame_new")
             
-            # Progress indicator
             progress = (frame_idx + 1) / len(st.session_state.animation_frames)
             st.progress(progress, text=f"Frame {frame_idx + 1}/{len(st.session_state.animation_frames)}")
     
@@ -1790,7 +2571,6 @@ class PandemicDashboard:
                 return
             
             with st.spinner("Creating GIF animation..."):
-                # Create temporary directory for frames
                 import tempfile
                 import os
                 
@@ -1806,30 +2586,24 @@ class PandemicDashboard:
                     try:
                         import imageio
                         
-                        # Get all frame files
                         frame_files = sorted([f for f in os.listdir(tmpdir) if f.endswith('.png')])
                         
                         if not frame_files:
                             st.error("No frames exported")
                             return
                         
-                        # Read frames
                         frames = []
                         for frame_file in frame_files:
                             frame_path = os.path.join(tmpdir, frame_file)
                             frames.append(imageio.imread(frame_path))
                         
-                        # Save as GIF
                         output_path = "simulation_animation.gif"
                         imageio.mimsave(output_path, frames, fps=fps)
                         
-                        # Display GIF
                         st.success(f"✅ GIF created: {output_path}")
                         
-                        # Show preview
                         st.image(output_path, caption="Simulation Animation GIF")
                         
-                        # Download button
                         with open(output_path, "rb") as f:
                             gif_data = f.read()
                         
@@ -1837,7 +2611,8 @@ class PandemicDashboard:
                             label="📥 Download GIF",
                             data=gif_data,
                             file_name="pandemic_simulation.gif",
-                            mime="image/gif"
+                            mime="image/gif",
+                            key="download_gif"
                         )
                         
                     except ImportError:
@@ -1857,26 +2632,22 @@ class PandemicDashboard:
             with st.spinner("Creating interactive HTML animation..."):
                 output_file = "interactive_animation.html"
                 
-                # Check if animator has the method
                 if hasattr(st.session_state.animator, 'create_interactive_animation'):
                     st.session_state.animator.create_interactive_animation(output_file)
                     
-                    # Read the HTML file
                     with open(output_file, "r") as f:
                         html_content = f.read()
                     
-                    # Display in Streamlit
                     st.success(f"✅ HTML animation created: {output_file}")
                     
-                    # Create download button
                     st.download_button(
                         label="📥 Download HTML Animation",
                         data=html_content,
                         file_name="pandemic_animation.html",
-                        mime="text/html"
+                        mime="text/html",
+                        key="download_html"
                     )
                     
-                    # Show preview
                     st.components.v1.html(html_content, height=600, scrolling=True)
                 else:
                     st.error("Interactive animation method not available in animator")
@@ -1892,13 +2663,11 @@ class PandemicDashboard:
                 return
             
             with st.spinner("Exporting animation frames..."):
-                # Create zip file of frames
                 import zipfile
                 import tempfile
                 import os
                 
                 with tempfile.TemporaryDirectory() as tmpdir:
-                    # Export frames
                     frames_dir = os.path.join(tmpdir, "frames")
                     try:
                         st.session_state.animator.export_animation_frames(output_dir=frames_dir)
@@ -1906,7 +2675,6 @@ class PandemicDashboard:
                         st.error(f"Error exporting frames: {e}")
                         return
                     
-                    # Create zip file
                     zip_path = os.path.join(tmpdir, "animation_frames.zip")
                     with zipfile.ZipFile(zip_path, 'w') as zipf:
                         for root, dirs, files in os.walk(frames_dir):
@@ -1915,30 +2683,28 @@ class PandemicDashboard:
                                 arcname = os.path.relpath(file_path, frames_dir)
                                 zipf.write(file_path, arcname)
                     
-                    # Read zip file
                     with open(zip_path, "rb") as f:
                         zip_data = f.read()
                     
-                    # Create download button
                     st.success(f"✅ Exported {len(os.listdir(frames_dir))} frames")
                     st.download_button(
                         label="📥 Download All Frames (ZIP)",
                         data=zip_data,
                         file_name="animation_frames.zip",
-                        mime="application/zip"
+                        mime="application/zip",
+                        key="download_frames"
                     )
                     
         except Exception as e:
             st.error(f"Error exporting frames: {str(e)}")
     
-    def _generate_mp4_animation(self, fps, quality):
+    def _generate_mp4_animation(self, fps, quality, resolution):
         """Generate MP4 video animation"""
         st.info("MP4 video creation requires ffmpeg. Ensure it's installed on your system.")
         
         try:
             import subprocess
             
-            # Check if ffmpeg is available
             result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
             
             if result.returncode != 0:
@@ -1957,12 +2723,10 @@ class PandemicDashboard:
                 return
             
             with st.spinner("Creating MP4 video..."):
-                # Create temporary directory for frames
                 import tempfile
                 import os
                 
                 with tempfile.TemporaryDirectory() as tmpdir:
-                    # Export frames
                     frames_dir = os.path.join(tmpdir, "frames")
                     try:
                         st.session_state.animator.export_animation_frames(output_dir=frames_dir)
@@ -1970,10 +2734,11 @@ class PandemicDashboard:
                         st.error(f"Error exporting frames: {e}")
                         return
                     
-                    # Create MP4 using ffmpeg
                     output_path = "simulation_animation.mp4"
                     
-                    # Build ffmpeg command
+                    # Parse resolution
+                    width, height = map(int, resolution.split('x'))
+                    
                     cmd = [
                         'ffmpeg',
                         '-framerate', str(fps),
@@ -1981,35 +2746,95 @@ class PandemicDashboard:
                         '-i', f'{frames_dir}/*.png',
                         '-c:v', 'libx264',
                         '-pix_fmt', 'yuv420p',
-                        '-vf', 'scale=1920:1080' if quality == "High" else 'scale=1280:720',
+                        '-vf', f'scale={width}:{height}',
                         output_path,
-                        '-y'  # Overwrite output file
+                        '-y'
                     ]
                     
-                    # Run ffmpeg
                     result = subprocess.run(cmd, capture_output=True, text=True)
                     
                     if result.returncode == 0:
-                        # Display video
                         st.success(f"✅ MP4 video created: {output_path}")
                         
-                        # Show video preview
                         video_file = open(output_path, 'rb')
                         video_bytes = video_file.read()
                         st.video(video_bytes)
                         
-                        # Download button
                         st.download_button(
                             label="📥 Download MP4 Video",
                             data=video_bytes,
                             file_name="pandemic_simulation.mp4",
-                            mime="video/mp4"
+                            mime="video/mp4",
+                            key="download_mp4"
                         )
                     else:
                         st.error(f"FFmpeg error: {result.stderr}")
                         
         except Exception as e:
             st.error(f"Error generating MP4: {str(e)}")
+    
+    def _generate_webm_animation(self, fps, quality, resolution):
+        """Generate WebM video animation"""
+        st.info("WebM video creation requires ffmpeg with VP9 codec support.")
+        
+        try:
+            import subprocess
+            
+            result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                st.error("FFmpeg not found.")
+                return
+            
+            with st.spinner("Creating WebM video..."):
+                import tempfile
+                import os
+                
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    frames_dir = os.path.join(tmpdir, "frames")
+                    try:
+                        st.session_state.animator.export_animation_frames(output_dir=frames_dir)
+                    except Exception as e:
+                        st.error(f"Error exporting frames: {e}")
+                        return
+                    
+                    output_path = "simulation_animation.webm"
+                    
+                    width, height = map(int, resolution.split('x'))
+                    
+                    cmd = [
+                        'ffmpeg',
+                        '-framerate', str(fps),
+                        '-pattern_type', 'glob',
+                        '-i', f'{frames_dir}/*.png',
+                        '-c:v', 'libvpx-vp9',
+                        '-pix_fmt', 'yuva420p',
+                        '-vf', f'scale={width}:{height}',
+                        output_path,
+                        '-y'
+                    ]
+                    
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    
+                    if result.returncode == 0:
+                        st.success(f"✅ WebM video created: {output_path}")
+                        
+                        video_file = open(output_path, 'rb')
+                        video_bytes = video_file.read()
+                        st.video(video_bytes)
+                        
+                        st.download_button(
+                            label="📥 Download WebM Video",
+                            data=video_bytes,
+                            file_name="pandemic_simulation.webm",
+                            mime="video/webm",
+                            key="download_webm"
+                        )
+                    else:
+                        st.error(f"FFmpeg error: {result.stderr}")
+                        
+        except Exception as e:
+            st.error(f"Error generating WebM: {str(e)}")
     
     def _play_streamlit_animation(self, delay_ms):
         """Play animation directly in Streamlit"""
@@ -2019,22 +2844,17 @@ class PandemicDashboard:
                 st.error("No animation frames available or only one frame")
                 return
             
-            # Create placeholder
             animation_placeholder = st.empty()
-            progress_bar = st.progress(0)
+            progress_bar = st.progress(0, text="Playing animation...")
             
-            # Animation loop
             for i, frame in enumerate(frames):
-                progress_bar.progress((i + 1) / len(frames))
+                progress_bar.progress((i + 1) / len(frames), text=f"Frame {i+1}/{len(frames)}")
                 
-                # Update display
                 with animation_placeholder.container():
                     self._display_animation_frame(i)
                 
-                # Wait for next frame
                 time.sleep(delay_ms / 1000)
             
-            # Clear when done
             animation_placeholder.empty()
             progress_bar.empty()
             
@@ -2054,24 +2874,28 @@ class PandemicDashboard:
             st.info("👈 Run a simulation first to see results")
             return
         
-        # Results summary
+        # Export options
         st.markdown("### 📊 Export Results")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("📊 Export Results CSV", use_container_width=True):
+            if st.button("📊 Export CSV", use_container_width=True, key="export_csv_btn"):
                 self._export_results_csv()
         
         with col2:
-            if st.button("📋 Export Summary JSON", use_container_width=True):
+            if st.button("📋 Export JSON", use_container_width=True, key="export_json_btn"):
                 self._export_summary()
         
         with col3:
-            if st.button("🖼️ Export Final Visualization", use_container_width=True):
+            if st.button("🖼️ Export Visualization", use_container_width=True, key="export_viz_btn"):
                 self._export_final_visualization()
         
-        # Detailed results
+        with col4:
+            if st.button("📁 Export All", use_container_width=True, key="export_all_btn"):
+                self._export_all_data()
+        
+        # Detailed metrics
         st.markdown("---")
         st.markdown("### 📋 Detailed Metrics")
         
@@ -2079,12 +2903,13 @@ class PandemicDashboard:
             try:
                 stats = st.session_state.simulator.get_summary_stats()
                 
-                # Display metrics in a nice format
                 metrics_col1, metrics_col2 = st.columns(2)
                 
                 with metrics_col1:
                     st.markdown("#### 📈 Epidemic Metrics")
-                    for key in ['attack_rate', 'peak_infections', 'peak_day', 'case_fatality_rate']:
+                    epidemic_metrics = ['attack_rate', 'peak_infections', 'peak_day', 
+                                       'case_fatality_rate', 'final_r_effective']
+                    for key in epidemic_metrics:
                         if key in stats:
                             value = stats[key]
                             if isinstance(value, float):
@@ -2095,7 +2920,9 @@ class PandemicDashboard:
                 
                 with metrics_col2:
                     st.markdown("#### 👥 Population Metrics")
-                    for key in ['initial_population', 'total_infected', 'total_recovered', 'total_deaths', 'total_vaccinated']:
+                    population_metrics = ['initial_population', 'total_infected', 
+                                         'total_recovered', 'total_deaths', 'total_vaccinated']
+                    for key in population_metrics:
                         if key in stats:
                             value = stats[key]
                             st.metric(key.replace('_', ' ').title(), f"{value:,}")
@@ -2107,20 +2934,26 @@ class PandemicDashboard:
             st.markdown("---")
             st.markdown("### 📈 Time Series Data")
             
-            # Create dataframe
             history_df = pd.DataFrame(st.session_state.simulation_history)
             
-            # Show last 30 days
             st.dataframe(history_df.tail(30), use_container_width=True)
             
-            # Download full history
             csv = history_df.to_csv(index=False)
             st.download_button(
                 label="📥 Download Full History CSV",
                 data=csv,
                 file_name="simulation_history.csv",
-                mime="text/csv"
+                mime="text/csv",
+                key="download_history"
             )
+        
+        # Configuration details
+        st.markdown("---")
+        st.markdown("### ⚙️ Configuration Details")
+        
+        if hasattr(st.session_state, 'simulation_params'):
+            with st.expander("View Simulation Parameters", expanded=False):
+                st.json(st.session_state.simulation_params)
     
     def _export_results_csv(self):
         """Export results to CSV"""
@@ -2133,7 +2966,8 @@ class PandemicDashboard:
                     label="📥 Download CSV",
                     data=csv,
                     file_name="simulation_results.csv",
-                    mime="text/csv"
+                    mime="text/csv",
+                    key="download_results_csv"
                 )
             else:
                 st.warning("No simulation results to export")
@@ -2146,7 +2980,6 @@ class PandemicDashboard:
             if hasattr(st.session_state.simulator, 'get_summary_stats'):
                 stats = st.session_state.simulator.get_summary_stats()
                 
-                # Add simulation parameters
                 if hasattr(st.session_state, 'simulation_params'):
                     stats['simulation_parameters'] = st.session_state.simulation_params
                 
@@ -2156,7 +2989,8 @@ class PandemicDashboard:
                     label="📥 Download JSON Summary",
                     data=json_str,
                     file_name="simulation_summary.json",
-                    mime="application/json"
+                    mime="application/json",
+                    key="download_summary_json"
                 )
             else:
                 st.warning("No summary statistics available")
@@ -2167,10 +3001,8 @@ class PandemicDashboard:
         """Export final visualization as image"""
         try:
             if st.session_state.animation_frames:
-                # Use the last frame
                 final_frame = st.session_state.animation_frames[-1]
                 
-                # Create visualization
                 fig, ax = plt.subplots(figsize=(12, 10))
                 
                 if hasattr(st.session_state.animator, 'node_positions'):
@@ -2181,31 +3013,38 @@ class PandemicDashboard:
                 G = st.session_state.network_graph
                 node_colors = final_frame['node_colors']
                 
-                # Draw network
                 nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.1, width=0.5)
                 nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=50, ax=ax)
                 
                 ax.set_title(f"Final State - Day {final_frame['day']}", fontsize=16, fontweight='bold')
                 ax.axis('off')
                 
-                # Save to buffer
                 buf = BytesIO()
                 plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # Create download button
                 st.download_button(
                     label="📥 Download Final Visualization",
                     data=buf.getvalue(),
                     file_name="final_simulation_state.png",
-                    mime="image/png"
+                    mime="image/png",
+                    key="download_final_viz"
                 )
                 
-                # Show preview
                 st.image(buf.getvalue(), caption="Final Simulation State")
                 
         except Exception as e:
             st.error(f"Error exporting visualization: {str(e)}")
+    
+    def _export_all_data(self):
+        """Export all data as a zip file"""
+        st.info("Complete data export feature coming soon!")
+        st.info("This would create a ZIP file containing:")
+        st.info("- Simulation results CSV")
+        st.info("- Summary statistics JSON")
+        st.info("- Configuration parameters")
+        st.info("- Final visualization image")
+        st.info("- Animation frames (if available)")
 
 def main():
     """Main function to run the dashboard"""
@@ -2239,7 +3078,7 @@ if __name__ == "__main__":
         
         print("🚀 Starting Pandemic Simulation Dashboard...")
         print("📊 Open your browser and go to http://localhost:8501")
-        print("🎬 Features: Network Animation, Disease Spread Visualization, Video Export!")
+        print("🎬 Features: Maximum parameter control, Network Animation, Disease Spread Visualization!")
         print("=" * 60)
         
         # Run the dashboard

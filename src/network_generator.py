@@ -22,7 +22,7 @@ class UltimateNetworkGenerator:
         self.real_data = pd.read_csv(csv_path)
         print(f" Loaded dataset with {len(self.real_data)} rows")
     
-    # ==================== BASE NETWORK MODELS ====================
+    # BASE NETWORK MODELS
     def erdos_renyi(self, p=0.01):
         """Random connections model"""
         G = nx.erdos_renyi_graph(n=self.population, p=p)
@@ -61,11 +61,10 @@ class UltimateNetworkGenerator:
         self._add_edge_attributes(G)
         return G
     
-    # ==================== HYBRID NETWORK ====================
+    #  HYBRID NETWORK
     def hybrid_multilayer(self, school_p=0.8, workplace_p=0.6, community_p=0.4):
         """
         Combine multiple network layers for realistic social structure
-        FIXED VERSION: Creates attributes BEFORE using them
         """
         print(" Building hybrid multilayer network...")
         
@@ -73,7 +72,7 @@ class UltimateNetworkGenerator:
         G = nx.watts_strogatz_graph(n=self.population, k=6, p=0.2)
         print(f"   Base network: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
         
-        # 2. Add attributes FIRST (CRITICAL FIX)
+        # 2. Add attributes FIRST 
         self._add_attributes(G)
         
         # 3. Create household layer
@@ -333,7 +332,7 @@ class UltimateNetworkGenerator:
             occ = occupations[i] if i < len(occupations) else 'worker'
             G.nodes[node]['occupation'] = occ
             
-            # Mobility (based on age and occupation)
+            # Mobility 
             G.nodes[node]['mobility'] = self._calculate_mobility(age, occ)
             
             # Essential worker flag

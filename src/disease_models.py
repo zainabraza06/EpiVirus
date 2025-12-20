@@ -60,17 +60,17 @@ class DiseaseParameters:
     })
     
     # Intervention effects
-    mask_efficacy: float = 0.5             # Source control + wearer protection
-    distancing_effect: float = 0.3         # Reduction from social distancing
-    isolation_effect: float = 0.9          # Reduction from case isolation
+    mask_efficacy: float = 0.3            # Source control + wearer protection
+    distancing_effect: float = 0.2        # Reduction from social distancing
+    isolation_effect: float = 0.5         # Reduction from case isolation
     
     # Vaccine parameters
     vaccine_efficacy: Dict[str, float] = field(default_factory=lambda: {
-        'infection': 0.9,      # Protection against infection
-        'severity': 0.95,      # Protection against severe disease
-        'transmission': 0.5,   # Reduction in transmission if infected
-        'waning_start': 180,   # Days until immunity starts waning
-        'waning_rate': 0.001   # Daily waning rate after start
+        'infection': 0.7,      # Protection against infection
+        'severity': 0.8,      # Protection against severe disease
+        'transmission': 0.6,   # Reduction in transmission if infected
+        'waning_start': 120,   # Days until immunity starts waning
+        'waning_rate': 0.003   # Daily waning rate after start
     })
     
     # Seasonality (for diseases like influenza)
@@ -129,7 +129,7 @@ class DiseaseLibrary:
                 p_mild=0.5,
                 p_severe=0.12,
                 p_critical=0.03,
-                mortality_rate=0.008,
+                mortality_rate=0.01,
                 hospitalization_rate=0.08
             )
         }
