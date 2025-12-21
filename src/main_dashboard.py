@@ -2099,15 +2099,15 @@ class PandemicDashboard:
             metric_cols = st.columns(2)
             
             with metric_cols[0]:
-                st.metric("Susceptible", stats.get('S', 0), key="stat_s")
-                st.metric("Exposed", stats.get('E', 0), key="stat_e")
-            
+                    st.metric("Susceptible", stats.get('S', 0))
+                    st.metric("Exposed", stats.get('E', 0))
+
             with metric_cols[1]:
-                st.metric("Infectious", stats.get('I', 0), key="stat_i")
-                st.metric("Recovered", stats.get('R', 0), key="stat_r")
-            
+                st.metric("Infectious", stats.get('I', 0))
+                st.metric("Recovered", stats.get('R', 0))
+
             if 'new_cases' in stats:
-                st.metric("New Cases", stats.get('new_cases', 0), key="stat_new")
+                st.metric("New Cases", stats.get('new_cases', 0))
             
             # State distribution
             st.markdown("#### 📈 State Distribution")
@@ -2534,20 +2534,12 @@ class PandemicDashboard:
         if auto_play:
             self._play_streamlit_animation(delay)
     
-    def _display_animation_frame(self, frame_idx):
-        """Display a single animation frame"""
-        if not st.session_state.animation_frames:
-            return
-        
-        if frame_idx >= len(st.session_state.animation_frames):
-            frame_idx = len(st.session_state.animation_frames) - 1
-        
-        frame = st.session_state.animation_frames[frame_idx]
-        
+    def _display_animation_frame_simple(self, frame, frame_idx):
+        """Display a simple animation frame"""
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            fig, ax = plt.subplots(figsize=(12, 10))
+            fig, ax = plt.subplots(figsize=(10, 8))
             
             if hasattr(st.session_state.animator, 'node_positions'):
                 pos = st.session_state.animator.node_positions
@@ -2557,66 +2549,25 @@ class PandemicDashboard:
             G = st.session_state.network_graph
             
             # Draw network
-            nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.1, width=0.3, edge_color='gray')
-            
             node_colors = frame['node_colors']
-            node_sizes = frame.get('node_sizes', [50] * len(G.nodes()))
             
-            color_groups = {}
-            for i, node in enumerate(G.nodes()):
-                color = node_colors[i] if i < len(node_colors) else '#CCCCCC'
-                if color not in color_groups:
-                    color_groups[color] = []
-                color_groups[color].append(node)
+            nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.1, width=0.5)
+            nx.draw_networkx_nodes(G, pos, 
+                                node_color=node_colors,
+                                node_size=50,
+                                ax=ax)
             
-            for color, nodes in color_groups.items():
-                sizes = []
-                for node in nodes:
-                    node_idx = list(G.nodes()).index(node)
-                    if node_idx < len(node_sizes):
-                        sizes.append(node_sizes[node_idx])
-                    else:
-                        sizes.append(50)
-                
-                nx.draw_networkx_nodes(
-                    G, pos, 
-                    nodelist=nodes,
-                    node_color=color,
-                    node_size=sizes,
-                    ax=ax,
-                    edgecolors='black',
-                    linewidths=0.5
-                )
-            
-            ax.set_title(f"Day {frame['day']} - Disease Spread", fontsize=16, fontweight='bold')
+            ax.set_title(f"Day {frame['day']} - Frame {frame_idx+1}/{len(st.session_state.animation_frames)}")
             ax.axis('off')
-            
-            from matplotlib.patches import Patch
-            legend_elements = [
-                Patch(facecolor='#4CAF50', label='Susceptible'),
-                Patch(facecolor='#FF9800', label='Exposed'),
-                Patch(facecolor='#F44336', label='Infectious'),
-                Patch(facecolor='#2196F3', label='Recovered')
-            ]
-            ax.legend(handles=legend_elements, loc='upper right')
             
             st.pyplot(fig)
             plt.close()
         
         with col2:
-            st.markdown(f"### Day {frame['day']}")
-            
             stats = frame['statistics']
-            
-            st.metric("Susceptible", stats.get('S', 0), key="frame_s")
-            st.metric("Infectious", stats.get('I', 0), key="frame_i")
-            st.metric("Recovered", stats.get('R', 0), key="frame_r")
-            
-            if 'new_cases' in stats:
-                st.metric("New Cases", stats.get('new_cases', 0), key="frame_new")
-            
-            progress = (frame_idx + 1) / len(st.session_state.animation_frames)
-            st.progress(progress, text=f"Frame {frame_idx + 1}/{len(st.session_state.animation_frames)}")
+            st.metric("Day", frame['day'])  # Removed key parameter
+            st.metric("Infectious", stats.get('I', 0))  # Removed key parameter
+            st.metric("New Cases", stats.get('new_cases', 0))  # Removed key parameter
     
     def _generate_gif_animation(self, fps, quality):
         """Generate GIF animation"""

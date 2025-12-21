@@ -1,8 +1,0 @@
-{
-  "objective": "minimize_deaths",
-  "objective_value": 0.0,
-  "simulation_id": 0,
-  "parameters": {
-    "param_n_seed_infections": 5.0
-  }
-}
