@@ -2112,6 +2112,12 @@ while not events.empty():
 
 ---
 
+## Deployment
+- The application is deployed on Caprover
+-**URL** https://epivirus.app.viralix.dev/
+
+
+
 ## 📚 References
 
 1. **COVID-19 Parameters**:
