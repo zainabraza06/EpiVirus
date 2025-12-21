@@ -48,14 +48,14 @@ class DiseaseParameters:
     
     # Age-stratified parameters
     age_stratification: Dict[str, Dict[str, float]] = field(default_factory=lambda: {
-        '0-9':   {'severity': 0.01,  'hospitalization': 0.005, 'mortality': 0.0001, 'susceptibility': 0.5},
-        '10-19': {'severity': 0.02,  'hospitalization': 0.01,  'mortality': 0.0002, 'susceptibility': 0.7},
-        '20-29': {'severity': 0.05,  'hospitalization': 0.02,  'mortality': 0.001,  'susceptibility': 0.9},
-        '30-39': {'severity': 0.1,   'hospitalization': 0.03,  'mortality': 0.003,  'susceptibility': 0.9},
-        '40-49': {'severity': 0.15,  'hospitalization': 0.05,  'mortality': 0.01,   'susceptibility': 0.9},
-        '50-59': {'severity': 0.25,  'hospitalization': 0.08,  'mortality': 0.03,   'susceptibility': 0.9},
-        '60-69': {'severity': 0.4,   'hospitalization': 0.15,  'mortality': 0.08,   'susceptibility': 0.9},
-        '70-79': {'severity': 0.6,   'hospitalization': 0.25,  'mortality': 0.15,   'susceptibility': 0.9},
+        '0-9':   {'severity': 0.01,  'hospitalization': 0.005, 'mortality': 0.01, 'susceptibility': 0.5},
+        '10-19': {'severity': 0.02,  'hospitalization': 0.01,  'mortality': 0.02, 'susceptibility': 0.7},
+        '20-29': {'severity': 0.05,  'hospitalization': 0.02,  'mortality': 0.1,  'susceptibility': 0.9},
+        '30-39': {'severity': 0.1,   'hospitalization': 0.03,  'mortality': 0.3,  'susceptibility': 0.9},
+        '40-49': {'severity': 0.15,  'hospitalization': 0.05,  'mortality': 0.1,   'susceptibility': 0.9},
+        '50-59': {'severity': 0.25,  'hospitalization': 0.08,  'mortality': 0.3,   'susceptibility': 0.9},
+        '60-69': {'severity': 0.4,   'hospitalization': 0.15,  'mortality': 0.8,   'susceptibility': 0.9},
+        '70-79': {'severity': 0.6,   'hospitalization': 0.25,  'mortality': 0.7,   'susceptibility': 0.9},
         '80+':   {'severity': 0.8,   'hospitalization': 0.35,  'mortality': 0.25,   'susceptibility': 0.9}
     })
     
@@ -450,7 +450,7 @@ class TransmissionCalculator:
         else: return '80+'
 
 class DiseaseProgression:
-    """Handles individual disease progression through states"""
+    """Handles individual disease progression through states - FIXED VERSION"""
     
     @staticmethod
     def determine_initial_course(age, disease, vaccination_status=False):
@@ -465,27 +465,42 @@ class DiseaseProgression:
         # Random outcome based on probabilities
         rand = random.random()
         
+        # Adjust probabilities for vaccination
         if vaccination_status:
-            # Adjust probabilities for vaccinated
             ve_severity = disease.vaccine_efficacy['severity']
-            adjusted_p_critical = disease.p_critical * (1 - ve_severity)
-            adjusted_p_severe = disease.p_severe * (1 - ve_severity * 0.7)
-            adjusted_p_mild = disease.p_mild
-            adjusted_p_asymptomatic = 1 - (adjusted_p_critical + adjusted_p_severe + adjusted_p_mild)
+            
+            # Vaccines primarily reduce severe outcomes
+            p_critical_vax = disease.p_critical * (1 - ve_severity)
+            p_severe_vax = disease.p_severe * (1 - ve_severity * 0.7)
+            p_mild_vax = disease.p_mild * (1 - ve_severity * 0.3)
+            p_asymptomatic_vax = 1 - (p_critical_vax + p_severe_vax + p_mild_vax)
+            
+            # Ensure probabilities are valid
+            p_asymptomatic_vax = max(0, min(1, p_asymptomatic_vax))
+            adjusted_p_asymptomatic = p_asymptomatic_vax
+            adjusted_p_mild = p_mild_vax
+            adjusted_p_severe = p_severe_vax
+            adjusted_p_critical = p_critical_vax
         else:
-            adjusted_p_critical = disease.p_critical
-            adjusted_p_severe = disease.p_severe
-            adjusted_p_mild = disease.p_mild
             adjusted_p_asymptomatic = disease.p_asymptomatic
+            adjusted_p_mild = disease.p_mild
+            adjusted_p_severe = disease.p_severe
+            adjusted_p_critical = disease.p_critical
         
-        # Adjust for age
+        # Adjust for age-specific severity
         age_severity = age_params['severity']
-        adjusted_p_critical *= age_severity
-        adjusted_p_severe *= age_severity
-        adjusted_p_mild *= (1 - age_severity * 0.5)
+        adjusted_p_critical *= (1 + age_severity * 2)
+        adjusted_p_severe *= (1 + age_severity)
+        adjusted_p_mild *= (1 - age_severity * 0.3)
         adjusted_p_asymptomatic = 1 - (adjusted_p_critical + adjusted_p_severe + adjusted_p_mild)
         
-        # Normalize probabilities to ensure they sum to 1
+        # Ensure all probabilities are between 0 and 1
+        adjusted_p_asymptomatic = max(0, min(1, adjusted_p_asymptomatic))
+        adjusted_p_mild = max(0, min(1, adjusted_p_mild))
+        adjusted_p_severe = max(0, min(1, adjusted_p_severe))
+        adjusted_p_critical = max(0, min(1, adjusted_p_critical))
+        
+        # Normalize
         total = adjusted_p_asymptomatic + adjusted_p_mild + adjusted_p_severe + adjusted_p_critical
         if total > 0:
             adjusted_p_asymptomatic /= total
@@ -493,31 +508,34 @@ class DiseaseProgression:
             adjusted_p_severe /= total
             adjusted_p_critical /= total
         
-        # Determine symptoms type
+        # Determine symptoms type based on probabilities
+        symptoms = 'asymptomatic'  # default
         if rand < adjusted_p_asymptomatic:
             symptoms = 'asymptomatic'
+        elif rand < adjusted_p_asymptomatic + adjusted_p_mild:
+            symptoms = 'mild'
+        elif rand < adjusted_p_asymptomatic + adjusted_p_mild + adjusted_p_severe:
+            symptoms = 'severe'
+        else:
+            symptoms = 'critical'
+        
+        # Set parameters based on symptoms
+        if symptoms == 'asymptomatic':
             inc_mean = disease.incubation_period['mean'] * 0.8
             inf_mean = disease.infectious_period['mean'] * 0.7
             hospitalization_prob = 0.0
-            mortality_prob = 0.0
-        elif rand < adjusted_p_asymptomatic + adjusted_p_mild:
-            symptoms = 'mild'
+        elif symptoms == 'mild':
             inc_mean = disease.incubation_period['mean']
             inf_mean = disease.infectious_period['mean'] * 0.9
             hospitalization_prob = 0.01 * age_params['hospitalization']
-            mortality_prob = 0.001 * age_params['mortality']
-        elif rand < adjusted_p_asymptomatic + adjusted_p_mild + adjusted_p_severe:
-            symptoms = 'severe'
+        elif symptoms == 'severe':
             inc_mean = disease.incubation_period['mean'] * 0.9
             inf_mean = disease.infectious_period['mean'] * 1.2
             hospitalization_prob = 0.7 * age_params['hospitalization']
-            mortality_prob = 0.1 * age_params['mortality']
-        else:
-            symptoms = 'critical'
+        else:  # critical
             inc_mean = disease.incubation_period['mean'] * 0.8
             inf_mean = disease.infectious_period['mean'] * 1.5
             hospitalization_prob = 0.9 * age_params['hospitalization']
-            mortality_prob = 0.5 * age_params['mortality']
         
         # Sample actual days from distributions
         incubation_days = max(1, int(np.random.normal(
@@ -528,24 +546,53 @@ class DiseaseProgression:
             inf_mean, disease.infectious_period['std']
         )))
         
-        # Determine if hospitalized (if severe/critical)
+        # Determine if hospitalized
         will_hospitalize = False
+        hospital_day = None
         if symptoms in ['severe', 'critical'] and random.random() < hospitalization_prob:
             will_hospitalize = True
             hospital_day = incubation_days + random.randint(1, 3)
-        else:
-            hospital_day = None
         
-        # Determine if dies
+        # Determine if dies - FIXED VERSION
         will_die = False
+        death_day = None
+        
+        # Base mortality from age
+        base_mortality = age_params['mortality']
+        
+        # Adjust mortality based on symptoms
+        if symptoms == 'asymptomatic':
+            mortality_prob = base_mortality * 0.01  # Very low
+        elif symptoms == 'mild':
+            mortality_prob = base_mortality * 0.1   # Low
+        elif symptoms == 'severe':
+            mortality_prob = base_mortality * 3.0   # Moderate
+        else:  # critical
+            mortality_prob = base_mortality * 10.0  # High
+        
+        # Apply vaccine protection
+        if vaccination_status:
+            ve_severity = disease.vaccine_efficacy['severity']
+            mortality_prob *= (1 - ve_severity * 0.8)  # Vaccines protect against death
+        
+        # Ensure probability is reasonable
+        mortality_prob = min(0.95, mortality_prob)
+        
+        # Roll for death
         if random.random() < mortality_prob:
             will_die = True
             if will_hospitalize:
                 death_day = hospital_day + random.randint(3, 14)
             else:
-                death_day = incubation_days + infectious_days - random.randint(1, 3)
+                death_day = incubation_days + random.randint(
+                    infectious_days // 2, infectious_days
+                )
+        
+        # Determine recovery day (if not fatal)
+        if will_die:
+            recovery_day = None
         else:
-            death_day = None
+            recovery_day = incubation_days + infectious_days
         
         return {
             'symptoms': symptoms,
@@ -555,30 +602,8 @@ class DiseaseProgression:
             'hospital_day': hospital_day,
             'will_die': will_die,
             'death_day': death_day,
-            'recovery_day': incubation_days + infectious_days
+            'recovery_day': recovery_day
         }
-    
-    @staticmethod
-    def update_immunity(node, G, disease, current_day):
-        """Update immunity levels (waning, boosting)"""
-        current_immunity = G.nodes[node]['immunity']
-        
-        # Natural immunity waning
-        if G.nodes[node]['state'] == 'R':
-            days_recovered = G.nodes[node]['days_in_state']
-            # Immunity wanes slowly over 1-2 years
-            waning_rate = 0.0005  # ~50% loss per year
-            new_immunity = current_immunity * (1 - waning_rate) ** (days_recovered / 365)
-            G.nodes[node]['immunity'] = max(0.3, new_immunity)  # Maintain some baseline
-        
-        # Vaccine immunity waning
-        elif G.nodes[node].get('vaccinated', False):
-            days_vaccinated = current_day - G.nodes[node].get('vaccination_day', current_day)
-            if days_vaccinated > disease.vaccine_efficacy['waning_start']:
-                waned_days = days_vaccinated - disease.vaccine_efficacy['waning_start']
-                waning = disease.vaccine_efficacy['waning_rate'] * waned_days
-                G.nodes[node]['immunity'] = max(0.0, current_immunity - waning)
-
 class InterventionSchedule:
     """Manages timing and application of interventions"""
     
