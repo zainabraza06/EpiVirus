@@ -4,13 +4,6 @@
 
 **A comprehensive, full-stack epidemic modeling and visualization platform for simulating disease spread across complex social networks**
 
-[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![React 19.2](https://img.shields.io/badge/React-19.2-61dafb.svg)](https://reactjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.5-009688.svg)](https://fastapi.tiangolo.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-[Features](#-key-features) • [Quick Start](#-quick-start) • [Architecture](#-system-architecture) • [Documentation](#-documentation) • [API](#-api-reference)
-
 </div>
 
 ---
@@ -32,8 +25,8 @@
 - [Project Structure](#-project-structure)
 - [Development](#-development)
 - [Performance](#-performance)
-- [Contributing](#-contributing)
-- [License](#-license)
+
+
 
 ---
 
@@ -2138,7 +2131,7 @@ while not events.empty():
 
 <div align="center">
 
-**Built with ❤️ for epidemiologists, researchers, and public health professionals**
+
 
 ⭐ **Star this repo** if you find it useful!
 
