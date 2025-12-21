@@ -189,6 +189,13 @@ class UltimateSimulator:
             age, self.disease, vaccinated
         )
         
+        # DEBUG: Print progression data to see what's happening
+        print(f"DEBUG: Node {node} (age {age}) progression:")
+        print(f"  Symptoms: {progression['symptoms']}")
+        print(f"  Will die: {progression['will_die']}")
+        print(f"  Recovery day: {progression['recovery_day']}")
+        print(f"  Death day: {progression['death_day']}")
+        
         # Store progression data
         self.G.nodes[node]['symptoms'] = progression['symptoms']
         self.G.nodes[node]['incubation_days'] = progression['incubation_days']
@@ -198,18 +205,40 @@ class UltimateSimulator:
         
         # Schedule state transitions
         # 1. Become infectious after incubation
-        self._schedule_event(node, 'become_infectious', progression['incubation_days'])
+        incubation_days = progression['incubation_days']
+        if incubation_days and incubation_days > 0:
+            self._schedule_event(node, 'become_infectious', incubation_days)
+        else:
+            # Default if incubation_days is invalid
+            self._schedule_event(node, 'become_infectious', 5)
+            print(f"⚠️  Warning: Invalid incubation days for node {node}, using default 5")
         
         # 2. Hospitalization if needed
-        if progression['will_hospitalize'] and progression['hospital_day']:
-            self._schedule_event(node, 'hospitalize', progression['hospital_day'])
+        if progression.get('will_hospitalize', False) and progression.get('hospital_day'):
+            hospital_day = progression['hospital_day']
+            if hospital_day and hospital_day > 0:
+                self._schedule_event(node, 'hospitalize', hospital_day)
         
-        # 3. Death if fatal
-        if progression['will_die'] and progression['death_day']:
-            self._schedule_event(node, 'die', progression['death_day'])
+        # 3. Death if fatal - FIXED: Only schedule if death_day exists and is valid
+        if progression.get('will_die', False) and progression.get('death_day'):
+            death_day = progression['death_day']
+            if death_day and death_day > 0:
+                self._schedule_event(node, 'die', death_day)
+                print(f"💀 Scheduled death for node {node} on day {self.time + death_day}")
+            else:
+                print(f"⚠️  Warning: Invalid death_day ({death_day}) for node {node}")
         
-        # 4. Recovery
-        self._schedule_event(node, 'recover', progression['recovery_day'])
+        # 4. Recovery - only schedule if not fatal and recovery_day exists
+        if not progression.get('will_die', False) and progression.get('recovery_day'):
+            recovery_day = progression['recovery_day']
+            if recovery_day and recovery_day > 0:
+                self._schedule_event(node, 'recover', recovery_day)
+            else:
+                print(f"⚠️  Warning: Invalid recovery_day ({recovery_day}) for node {node}")
+        elif progression.get('will_die', False):
+            print(f"ℹ️  Node {node} will die, skipping recovery scheduling")
+        else:
+            print(f"⚠️  Warning: No recovery day for node {node}")
         
         # Update infection tree for contact tracing
         if source != 'seed':
@@ -226,7 +255,6 @@ class UltimateSimulator:
             'to': node,
             'time': self.time
         })
-    
     # ==================== TRANSMISSION STEP ====================
     
     def _transmission_step(self):

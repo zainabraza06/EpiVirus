@@ -453,6 +453,7 @@ class DiseaseProgression:
     """Handles individual disease progression through states - FIXED VERSION"""
     
     @staticmethod
+    @staticmethod
     def determine_initial_course(age, disease, vaccination_status=False):
         """
         Determine disease course when someone gets infected
@@ -470,9 +471,9 @@ class DiseaseProgression:
             ve_severity = disease.vaccine_efficacy['severity']
             
             # Vaccines primarily reduce severe outcomes
-            p_critical_vax = disease.p_critical * (1 - ve_severity)
-            p_severe_vax = disease.p_severe * (1 - ve_severity * 0.7)
-            p_mild_vax = disease.p_mild * (1 - ve_severity * 0.3)
+            p_critical_vax = max(0, disease.p_critical * (1 - ve_severity))
+            p_severe_vax = max(0, disease.p_severe * (1 - ve_severity * 0.7))
+            p_mild_vax = max(0, disease.p_mild * (1 - ve_severity * 0.3))
             p_asymptomatic_vax = 1 - (p_critical_vax + p_severe_vax + p_mild_vax)
             
             # Ensure probabilities are valid
@@ -489,18 +490,13 @@ class DiseaseProgression:
         
         # Adjust for age-specific severity
         age_severity = age_params['severity']
-        adjusted_p_critical *= (1 + age_severity * 2)
-        adjusted_p_severe *= (1 + age_severity)
-        adjusted_p_mild *= (1 - age_severity * 0.3)
+        adjusted_p_critical = min(1, adjusted_p_critical * (1 + age_severity * 2))
+        adjusted_p_severe = min(1, adjusted_p_severe * (1 + age_severity))
+        adjusted_p_mild = max(0, adjusted_p_mild * (1 - age_severity * 0.3))
         adjusted_p_asymptomatic = 1 - (adjusted_p_critical + adjusted_p_severe + adjusted_p_mild)
-        
-        # Ensure all probabilities are between 0 and 1
         adjusted_p_asymptomatic = max(0, min(1, adjusted_p_asymptomatic))
-        adjusted_p_mild = max(0, min(1, adjusted_p_mild))
-        adjusted_p_severe = max(0, min(1, adjusted_p_severe))
-        adjusted_p_critical = max(0, min(1, adjusted_p_critical))
         
-        # Normalize
+        # Normalize to ensure sum = 1
         total = adjusted_p_asymptomatic + adjusted_p_mild + adjusted_p_severe + adjusted_p_critical
         if total > 0:
             adjusted_p_asymptomatic /= total
@@ -537,7 +533,7 @@ class DiseaseProgression:
             inf_mean = disease.infectious_period['mean'] * 1.5
             hospitalization_prob = 0.9 * age_params['hospitalization']
         
-        # Sample actual days from distributions
+        # Sample actual days from distributions - ensure minimum values
         incubation_days = max(1, int(np.random.normal(
             inc_mean, disease.incubation_period['std']
         )))
@@ -553,7 +549,7 @@ class DiseaseProgression:
             will_hospitalize = True
             hospital_day = incubation_days + random.randint(1, 3)
         
-        # Determine if dies - FIXED VERSION
+        # Determine if dies
         will_die = False
         death_day = None
         
@@ -576,12 +572,12 @@ class DiseaseProgression:
             mortality_prob *= (1 - ve_severity * 0.8)  # Vaccines protect against death
         
         # Ensure probability is reasonable
-        mortality_prob = min(0.95, mortality_prob)
+        mortality_prob = min(0.95, max(0, mortality_prob))
         
         # Roll for death
         if random.random() < mortality_prob:
             will_die = True
-            if will_hospitalize:
+            if will_hospitalize and hospital_day:
                 death_day = hospital_day + random.randint(3, 14)
             else:
                 death_day = incubation_days + random.randint(
@@ -594,6 +590,15 @@ class DiseaseProgression:
         else:
             recovery_day = incubation_days + infectious_days
         
+        # DEBUG: Log for problematic cases
+        if will_die and (death_day is None or death_day <= 0):
+            print(f"⚠️  DEBUG: Node marked to die but death_day={death_day}, symptoms={symptoms}")
+            death_day = incubation_days + infectious_days  # Default fallback
+        
+        if recovery_day is None and not will_die:
+            print(f"⚠️  DEBUG: Node not marked to die but recovery_day=None, symptoms={symptoms}")
+            recovery_day = incubation_days + infectious_days  # Default fallback
+        
         return {
             'symptoms': symptoms,
             'incubation_days': incubation_days,
@@ -602,8 +607,33 @@ class DiseaseProgression:
             'hospital_day': hospital_day,
             'will_die': will_die,
             'death_day': death_day,
-            'recovery_day': recovery_day
+            'recovery_day': recovery_day  # This will be None if will_die is True
         }
+    @staticmethod
+    def update_immunity(node, G, disease, current_day):
+        """Update immunity levels (waning, boosting)"""
+        if 'immunity' not in G.nodes[node]:
+            G.nodes[node]['immunity'] = 0.0
+            
+        current_immunity = G.nodes[node]['immunity']
+        
+        # Natural immunity waning for recovered individuals
+        if G.nodes[node].get('state') == 'R':
+            days_recovered = G.nodes[node].get('days_in_state', 0)
+            # Immunity wanes slowly over time
+            waning_rate = 0.0005  # ~50% loss per year if no boosting
+            new_immunity = current_immunity * (1 - waning_rate) ** (days_recovered / 365)
+            G.nodes[node]['immunity'] = max(0.0, min(1.0, new_immunity))
+        
+        # Vaccine immunity waning
+        elif G.nodes[node].get('vaccinated', False):
+            vaccination_day = G.nodes[node].get('vaccination_day', current_day)
+            days_vaccinated = max(0, current_day - vaccination_day)
+            
+            if days_vaccinated > disease.vaccine_efficacy.get('waning_start', 120):
+                waned_days = days_vaccinated - disease.vaccine_efficacy['waning_start']
+                waning = disease.vaccine_efficacy.get('waning_rate', 0.003) * waned_days
+                G.nodes[node]['immunity'] = max(0.0, current_immunity - waning)
 class InterventionSchedule:
     """Manages timing and application of interventions"""
     
