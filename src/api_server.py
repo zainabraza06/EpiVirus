@@ -1,6 +1,8 @@
 # api_server.py - FastAPI wrapper for EpiVirus Pandemic Simulator
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import uvicorn
@@ -11,6 +13,8 @@ import asyncio
 import numpy as np
 import networkx as nx
 import traceback
+import os
+from pathlib import Path
 
 # Add project modules to path
 sys.path.append('./src')
@@ -28,11 +32,29 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite default ports
+    allow_origins=["*"],  # Allow all origins in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static files (frontend build)
+STATIC_DIR = Path(__file__).parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+    
+    @app.get("/")
+    async def serve_frontend():
+        """Serve the React frontend"""
+        return FileResponse(STATIC_DIR / "index.html")
+    
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve SPA routes"""
+        file_path = STATIC_DIR / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(STATIC_DIR / "index.html")
 
 # Global state for active simulations
 active_simulations: Dict[str, Dict[str, Any]] = {}
