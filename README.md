@@ -313,7 +313,7 @@ Unlike simplified SIR models, EpiVirus implements:
 
 ```powershell
 # Clone repository
-git clone https://github.com/yourusername/EpiVirus.git
+git clone https://github.com/zainabraza06/EpiVirus.git
 cd EpiVirus
 
 # Run complete setup script (installs dependencies + starts servers)
@@ -392,7 +392,7 @@ Streamlit app will be available at: **http://localhost:8501**
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/EpiVirus.git
+git clone https://github.com/zainabraza06/EpiVirus.git
 cd EpiVirus/server
 
 # Create isolated Python environment
@@ -2102,46 +2102,10 @@ while not events.empty():
 
 **Benefit**: More realistic (individuals don't all transition at midnight)
 
----
 
-## 📄 License
 
-This project is licensed under the **MIT License**.
 
-```
-MIT License
 
-Copyright (c) 2025 EpiVirus Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
----
-
-## 📞 Contact & Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/EpiVirus/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/EpiVirus/discussions)
-- **Email**: support@epivirus.io
-- **Documentation**: [Full Docs](https://epivirus.io/docs)
-
----
 
 ## 🙏 Acknowledgments
 
@@ -2178,6 +2142,6 @@ SOFTWARE.
 
 ⭐ **Star this repo** if you find it useful!
 
-[Report Bug](https://github.com/yourusername/EpiVirus/issues) • [Request Feature](https://github.com/yourusername/EpiVirus/issues) • [Documentation](https://epivirus.io/docs)
+
 
 </div>
