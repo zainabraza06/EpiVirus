@@ -38,23 +38,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static files (frontend build)
+# Serve static files (frontend build) - defined at the end after API routes
 STATIC_DIR = Path(__file__).parent / "static"
-if STATIC_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
-    
-    @app.get("/")
-    async def serve_frontend():
-        """Serve the React frontend"""
-        return FileResponse(STATIC_DIR / "index.html")
-    
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        """Serve SPA routes"""
-        file_path = STATIC_DIR / full_path
-        if file_path.exists() and file_path.is_file():
-            return FileResponse(file_path)
-        return FileResponse(STATIC_DIR / "index.html")
 
 # Global state for active simulations
 active_simulations: Dict[str, Dict[str, Any]] = {}
@@ -484,6 +469,29 @@ async def list_simulations():
         })
     
     return {"simulations": simulations}
+
+# ==================== FRONTEND SERVING (AFTER ALL API ROUTES) ====================
+
+# Mount static assets
+if STATIC_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+    
+    @app.get("/")
+    async def serve_frontend():
+        """Serve the React frontend"""
+        return FileResponse(STATIC_DIR / "index.html")
+    
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve SPA routes - catch-all for frontend routing"""
+        # Don't serve API routes
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        file_path = STATIC_DIR / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(STATIC_DIR / "index.html")
 
 # ==================== MAIN ====================
 
