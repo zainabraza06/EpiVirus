@@ -143,9 +143,9 @@ def apply_interventions(simulator: UltimateSimulator, scenario: str, vaccination
 
 # ==================== API ENDPOINTS ====================
 
-@app.get("/")
-async def root():
-    """API root endpoint"""
+@app.get("/api")
+async def api_root():
+    """API root endpoint - provides API information"""
     return {
         "message": "EpiVirus Pandemic Simulation API",
         "version": "1.0.0",
