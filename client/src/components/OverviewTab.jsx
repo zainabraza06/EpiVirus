@@ -168,7 +168,6 @@ export default function OverviewTab({
                                     </div>
                                 </div>
                             </div>
-                            </div>
                         )}
 
                     {/* Quick Start Guide */}

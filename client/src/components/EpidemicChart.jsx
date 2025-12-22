@@ -86,7 +86,6 @@ export default function EpidemicChart({ history }) {
                     width={width}
                     height={height}
                     className="border border-gray-700 rounded-lg bg-gray-800">
-                >
                     {/* Grid lines */}
                     {[0, 1, 2, 3, 4].map((i) => {
                         const y = padding + (i * (height - 2 * padding)) / 4
