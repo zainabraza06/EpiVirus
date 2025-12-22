@@ -202,11 +202,10 @@ export default function AnimationTab({ simulationResults }) {
                                     <button
                                         key={fps}
                                         onClick={() => setPlaybackSpeed(1000 / fps)}
-                                        className={`py-2 px-3 rounded-lg font-semibold transition-all text-sm border ${
-                                            Math.abs((1000 / playbackSpeed) - fps) < 0.5
+                                        className={`py-2 px-3 rounded-lg font-semibold transition-all text-sm border ${Math.abs((1000 / playbackSpeed) - fps) < 0.5
                                                 ? 'bg-indigo-600 text-white border-indigo-500'
                                                 : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'
-                                        }`}
+                                            }`}
                                     >
                                         {fps}
                                     </button>

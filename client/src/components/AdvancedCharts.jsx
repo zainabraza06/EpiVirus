@@ -13,7 +13,8 @@ export function DiseaseDynamicsChart({ history }) {
     const maxValue = Math.max(
         ...history.S,
         ...history.I,
-        ...history.R
+        ...history.R,
+        ...(history.D || [])
     )
 
     const xScale = (width - 2 * padding) / (days - 1)
@@ -35,7 +36,8 @@ export function DiseaseDynamicsChart({ history }) {
             `L ${padding},${height - padding} Z`
     }
 
-    // Stack the areas: S, then S+I, then S+I+R
+    // Stack the areas: S, then S+I, then S+I+R, then S+I+R+D
+    const deathsStacked = history.S.map((s, i) => s + history.I[i] + history.R[i] + (history.D?.[i] || 0))
     const recoveredStacked = history.S.map((s, i) => s + history.I[i] + history.R[i])
     const infectedStacked = history.S.map((s, i) => s + history.I[i])
 
@@ -70,7 +72,12 @@ export function DiseaseDynamicsChart({ history }) {
                     )
                 })}
 
-                {/* Stacked areas - drawn from top to bottom */}
+                {/* Stacked area paths - ordered from top (deaths) to bottom (susceptible) */}
+                <path
+                    d={createAreaPath(deathsStacked)}
+                    fill="#757575"
+                    opacity="0.7"
+                />
                 <path
                     d={createAreaPath(recoveredStacked)}
                     fill="#2196F3"
@@ -142,6 +149,10 @@ export function DiseaseDynamicsChart({ history }) {
                 <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-blue-500 rounded opacity-70"></div>
                     <span className="text-sm font-medium">Recovered</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-500 rounded opacity-70"></div>
+                    <span className="text-sm font-medium">Deceased</span>
                 </div>
             </div>
         </div>

@@ -46,7 +46,8 @@ export function DiseaseDynamicsStacked({ history }) {
         day: i,
         Susceptible: s,
         Infectious: history.I[i],
-        Recovered: history.R[i]
+        Recovered: history.R[i],
+        Deceased: history.D?.[i] || 0
     }))
 
     return (
@@ -90,6 +91,14 @@ export function DiseaseDynamicsStacked({ history }) {
                         stackId="1"
                         stroke="#2196F3"
                         fill="#2196F3"
+                        fillOpacity={0.6}
+                    />
+                    <Area
+                        type="monotone"
+                        dataKey="Deceased"
+                        stackId="1"
+                        stroke="#757575"
+                        fill="#757575"
                         fillOpacity={0.6}
                     />
                 </AreaChart>
@@ -708,10 +717,10 @@ export function StackedAreaChart({ history }) {
                     <YAxis label={{ value: 'Population', angle: -90, position: 'insideLeft' }} />
                     <Tooltip />
                     <Legend />
-                    <Area type="monotone" dataKey="Susceptible" stackId="1" stroke={COLORS.susceptible} fill={COLORS.susceptible} />
-                    <Area type="monotone" dataKey="Infected" stackId="1" stroke={COLORS.infected} fill={COLORS.infected} />
-                    <Area type="monotone" dataKey="Recovered" stackId="1" stroke={COLORS.recovered} fill={COLORS.recovered} />
-                    <Area type="monotone" dataKey="Deceased" stackId="1" stroke={COLORS.deceased} fill={COLORS.deceased} />
+                    <Area type="monotone" dataKey="Susceptible" stackId="1" stroke={COLORS.susceptible} fill={COLORS.susceptible} fillOpacity={0.8} />
+                    <Area type="monotone" dataKey="Infected" stackId="1" stroke={COLORS.infected} fill={COLORS.infected} fillOpacity={0.8} />
+                    <Area type="monotone" dataKey="Recovered" stackId="1" stroke={COLORS.recovered} fill={COLORS.recovered} fillOpacity={0.8} />
+                    <Area type="monotone" dataKey="Deceased" stackId="1" stroke={COLORS.deceased} fill={COLORS.deceased} fillOpacity={0.8} />
                 </AreaChart>
             </ResponsiveContainer>
         </div>
@@ -872,15 +881,15 @@ export function CumulativeStatsChart({ history }) {
     if (!history || !history.S) return null
 
     const data = history.S.map((_, i) => {
-        const totalInfected = history.I.slice(0, i + 1).reduce((a, b) => a + b, 0)
         const totalRecovered = history.R[i]
-        const totalDeceased = history.D?.[i] || 0
+        const totalDeaths = history.D?.[i] || 0
+        const totalInfected = (history.S[0] - history.S[i]) // Total who left susceptible pool
 
         return {
             day: i,
             'Total Infected': totalInfected,
             'Total Recovered': totalRecovered,
-            'Total Deaths': totalDeceased
+            'Total Deaths': totalDeaths
         }
     })
 
@@ -936,12 +945,13 @@ export function ActiveVsRecoveredChart({ history }) {
     const data = history.I.map((infected, i) => ({
         day: i,
         Active: infected,
-        Recovered: history.R[i]
+        Recovered: history.R[i],
+        Deaths: history.D?.[i] || 0
     }))
 
     return (
         <div className="bg-gray-800 rounded-lg shadow-xl p-6">
-            <h3 className="text-2xl font-bold mb-4 text-white">⚖️ Active Cases vs Recovered</h3>
+            <h3 className="text-2xl font-bold mb-4 text-white">⚖️ Active vs Recovered vs Deaths</h3>
             <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -951,6 +961,7 @@ export function ActiveVsRecoveredChart({ history }) {
                     <Legend />
                     <Bar dataKey="Active" fill="#F44336" />
                     <Bar dataKey="Recovered" fill="#2196F3" />
+                    <Bar dataKey="Deaths" fill="#757575" />
                 </BarChart>
             </ResponsiveContainer>
         </div>
