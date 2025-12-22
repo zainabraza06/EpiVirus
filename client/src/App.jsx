@@ -641,7 +641,10 @@ function App() {
                 {simulationResults.history && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <InfectionWaveChart history={simulationResults.history} />
-                    <PopulationStateTreemap history={simulationResults.history} />
+                    <PopulationStateTreemap 
+                      history={simulationResults.history} 
+                      summary={simulationResults.summary}
+                    />
                   </div>
                 )}
 
@@ -650,7 +653,10 @@ function App() {
                   {simulationResults.detailed_data?.r_effective && (
                     <REffectiveChart rEffectiveHistory={simulationResults.detailed_data.r_effective} />
                   )}
-                  <EpidemicChart history={simulationResults.history} />
+                  <EpidemicChart 
+                    history={simulationResults.history} 
+                    summary={simulationResults.summary}
+                  />
                 </div>
               </div>
             )}

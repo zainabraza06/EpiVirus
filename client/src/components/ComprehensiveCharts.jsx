@@ -275,16 +275,18 @@ export function SimulationSummary({ simulationResults }) {
     const peakInfections = Math.max(...history.I)
     const peakDay = history.I.indexOf(peakInfections)
     const totalRecovered = history.R[lastDay]
-    const totalDeaths = history.D?.[lastDay] || 0
+    
+    // Prefer backend summary values if available, fallback to history
+    const totalDeaths = summary?.total_deaths ?? (history.D?.[lastDay] || 0)
+    const totalVaccinated = summary?.total_vaccinated ?? 0
+    const totalHospitalized = summary?.total_hospitalized ?? (detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0)
+    
     const totalPopulation = history.S[0] + history.I[0] + history.R[0]
     const attackRate = ((totalRecovered + totalDeaths) / totalPopulation * 100).toFixed(1)
     const caseFatalityRate = (totalRecovered + totalDeaths) > 0
         ? (totalDeaths / (totalRecovered + totalDeaths) * 100).toFixed(2)
         : '0.00'
 
-    // Use summary values from backend if available
-    const totalVaccinated = summary?.total_vaccinated ?? 0
-    const totalHospitalized = summary?.total_hospitalized ?? (detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0)
     const finalSusceptible = history.S[lastDay]
 
     console.log('SimulationSummary - Calculated values:', {
@@ -427,11 +429,11 @@ export function DailyNewCasesBar({ history }) {
 export function IntegratedRiskModel({ simulationResults }) {
     if (!simulationResults?.history) return null
 
-    const { history, detailed_data } = simulationResults
+    const { history, detailed_data, summary } = simulationResults
     const totalPopulation = history.S[0] + history.I[0] + history.R[0]
     const lastDay = history.S.length - 1
     const peakInfections = Math.max(...history.I)
-    const totalDeaths = history.D?.[lastDay] || 0
+    const totalDeaths = summary?.total_deaths ?? (history.D?.[lastDay] || 0)
     const attackRate = ((history.R[lastDay] + totalDeaths) / totalPopulation * 100).toFixed(1)
 
     // Calculate risk score (0-1)
@@ -1153,13 +1155,14 @@ export function InfectionWaveChart({ history }) {
 }
 
 // 17. NEW: Population State Treemap
-export function PopulationStateTreemap({ history }) {
+export function PopulationStateTreemap({ history, summary }) {
     if (!history || !history.S) return null
 
     const lastDay = history.S.length - 1
+    const totalDeaths = summary?.total_deaths ?? (history.D?.[lastDay] || 0)
 
     // Treemap needs hierarchical data structure
-    const total = history.S[lastDay] + history.I[lastDay] + history.R[lastDay] + (history.D?.[lastDay] || 0)
+    const total = history.S[lastDay] + history.I[lastDay] + history.R[lastDay] + totalDeaths
 
     const data = {
         name: 'Population',
@@ -1181,7 +1184,7 @@ export function PopulationStateTreemap({ history }) {
             },
             {
                 name: 'Deceased',
-                size: Math.max(history.D?.[lastDay] || 0, 1),
+                size: Math.max(totalDeaths, 1),
                 fill: '#757575'
             }
         ]

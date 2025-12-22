@@ -1,7 +1,7 @@
 // components/EpidemicChart.jsx
 import { useMemo } from 'react'
 
-export default function EpidemicChart({ history }) {
+export default function EpidemicChart({ history, summary }) {
     // Calculate chart dimensions and scales
     const chartData = useMemo(() => {
         if (!history || !history.S) return null
@@ -14,15 +14,19 @@ export default function EpidemicChart({ history }) {
             ...(history.D || [])
         )
 
+        // Use backend summary value for total deaths if available
+        const totalDeaths = summary?.total_deaths ?? (history.D?.[history.D.length - 1] || 0)
+
         return {
             days,
             maxValue,
             susceptible: history.S,
             infected: history.I,
             recovered: history.R,
-            deceased: history.D || []
+            deceased: history.D || [],
+            totalDeaths
         }
-    }, [history])
+    }, [history, summary])
 
     if (!chartData) {
         return (
@@ -38,7 +42,7 @@ export default function EpidemicChart({ history }) {
         )
     }
 
-    const { days, maxValue, susceptible, infected, recovered, deceased } = chartData
+    const { days, maxValue, susceptible, infected, recovered, deceased, totalDeaths } = chartData
 
     // SVG dimensions
     const width = 800
@@ -208,12 +212,12 @@ export default function EpidemicChart({ history }) {
                     <div className="text-xs text-gray-300 uppercase">Total Recovered</div>
                     <div className="text-xl font-bold text-blue-400">{recovered[recovered.length - 1]}</div>
                 </div>
-                <div className={`bg-gray-700 rounded-lg p-3 border-2 ${deceased[deceased.length - 1] > 0 ? 'border-red-600' : 'border-green-600'}`}>
+                <div className={`bg-gray-700 rounded-lg p-3 border-2 ${totalDeaths > 0 ? 'border-red-600' : 'border-green-600'}`}>
                     <div className="text-xs text-gray-300 uppercase">Total Deaths</div>
-                    <div className={`text-xl font-bold ${deceased[deceased.length - 1] > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                        {deceased[deceased.length - 1] || 0}
+                    <div className={`text-xl font-bold ${totalDeaths > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        {totalDeaths}
                     </div>
-                    {deceased[deceased.length - 1] === 0 && (
+                    {totalDeaths === 0 && (
                         <div className="text-xs text-green-400 mt-1">✓ Zero fatalities</div>
                     )}
                 </div>
