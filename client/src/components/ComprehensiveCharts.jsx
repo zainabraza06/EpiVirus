@@ -275,12 +275,12 @@ export function SimulationSummary({ simulationResults }) {
     const peakInfections = Math.max(...history.I)
     const peakDay = history.I.indexOf(peakInfections)
     const totalRecovered = history.R[lastDay]
-    
+
     // Prefer backend summary values if available, fallback to history
     const totalDeaths = summary?.total_deaths ?? (history.D?.[lastDay] || 0)
     const totalVaccinated = summary?.total_vaccinated ?? 0
     const totalHospitalized = summary?.total_hospitalized ?? (detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0)
-    
+
     const totalPopulation = history.S[0] + history.I[0] + history.R[0]
     const attackRate = ((totalRecovered + totalDeaths) / totalPopulation * 100).toFixed(1)
     const caseFatalityRate = (totalRecovered + totalDeaths) > 0
