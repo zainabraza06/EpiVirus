@@ -182,13 +182,9 @@ export default function Network3D({ simulationData }) {
                         <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                         <span>Recovered: {stats.R}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                        <span className="font-semibold">Deceased (Current): {stats.D}</span>
-                    </div>
                     <div className={`flex items-center gap-2 ${cumulativeDeaths > 0 ? 'text-red-400' : 'text-green-400'}`}>
                         <div className={`w-3 h-3 rounded-full ${cumulativeDeaths > 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                        <span className="font-bold">Total Deaths: {cumulativeDeaths} {cumulativeDeaths === 0 && '✓'}</span>
+                        <span className="font-bold">💀 Total Deaths: {cumulativeDeaths} {cumulativeDeaths === 0 && '✓'}</span>
                     </div>
                     {stats.V > 0 && (
                         <div className="flex items-center gap-2">
