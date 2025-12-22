@@ -82,7 +82,7 @@ export default function AnimationTab({ simulationResults }) {
         R: simulationResults.history?.R?.[currentFrame] || 0,
         D: simulationResults.history?.D?.[currentFrame] || 0
     }
-    
+
     // Debug logging
     if (currentFrame === 0) {
         console.log('AnimationTab - Full history.D array:', simulationResults.history?.D)
@@ -478,8 +478,8 @@ function Floating3DCard({ label, value, percent, icon, delay, isDeaths = false }
         >
             <div
                 className={`bg-gray-700 p-4 rounded-xl shadow-2xl border-2 transition-all duration-300 ${isDeaths
-                        ? (isZeroDeaths ? 'border-green-600 hover:border-green-500 bg-green-900 bg-opacity-20' : 'border-red-600 hover:border-red-500 bg-red-900 bg-opacity-20')
-                        : 'border-gray-600 hover:border-gray-500'
+                    ? (isZeroDeaths ? 'border-green-600 hover:border-green-500 bg-green-900 bg-opacity-20' : 'border-red-600 hover:border-red-500 bg-red-900 bg-opacity-20')
+                    : 'border-gray-600 hover:border-gray-500'
                     }`}
                 style={{
                     transformStyle: 'preserve-3d',

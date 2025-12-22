@@ -267,11 +267,11 @@ export function SimulationSummary({ simulationResults }) {
 
     const { history, detailed_data, summary } = simulationResults
     const lastDay = history.S.length - 1
-    
+
     // Debug logging
     console.log('SimulationSummary - history.D:', history.D)
     console.log('SimulationSummary - summary:', summary)
-    
+
     const peakInfections = Math.max(...history.I)
     const peakDay = history.I.indexOf(peakInfections)
     const totalRecovered = history.R[lastDay]
@@ -286,7 +286,7 @@ export function SimulationSummary({ simulationResults }) {
     const totalVaccinated = summary?.total_vaccinated ?? 0
     const totalHospitalized = summary?.total_hospitalized ?? (detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0)
     const finalSusceptible = history.S[lastDay]
-    
+
     console.log('SimulationSummary - Calculated values:', {
         totalDeaths,
         totalVaccinated,
