@@ -811,10 +811,34 @@ function MetricCard({ label, value, icon, color = 'blue' }) {
 }
 
 function DetailMetric({ label, value }) {
+  // Check if this is a "good zero" metric (deaths, CFR)
+  const isDeathMetric = label.toLowerCase().includes('death') || label.toLowerCase().includes('fatality');
+  const isZero = value === 0 || value === '0' || value === '0%' || value === '0.00%';
+  const isVaccinatedOrHospitalized = label.toLowerCase().includes('vaccinated') || label.toLowerCase().includes('hospitalized');
+  
+  // Determine styling based on metric type and value
+  let valueColorClass = 'text-white';
+  let borderClass = 'border-gray-600';
+  
+  if (isDeathMetric) {
+    if (isZero) {
+      valueColorClass = 'text-green-400';
+      borderClass = 'border-green-600';
+    } else {
+      valueColorClass = 'text-red-400';
+      borderClass = 'border-red-600';
+    }
+  } else if (isVaccinatedOrHospitalized && isZero) {
+    valueColorClass = 'text-gray-400';
+  }
+  
   return (
-    <div className="bg-gray-700 p-3 rounded border border-gray-600">
+    <div className={`bg-gray-700 p-3 rounded border ${borderClass}`}>
       <div className="text-xs text-gray-300 mb-1">{label}</div>
-      <div className="text-lg font-semibold text-white">{value}</div>
+      <div className={`text-lg font-semibold ${valueColorClass}`}>
+        {value}
+        {isDeathMetric && isZero && <span className="ml-2 text-green-400">✓</span>}
+      </div>
     </div>
   )
 }

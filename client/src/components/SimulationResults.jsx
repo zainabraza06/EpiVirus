@@ -16,7 +16,8 @@ export default function SimulationResults({ results }) {
         {
             label: 'Total Deaths',
             value: (summary.total_deaths || 0).toLocaleString(),
-            icon: '💀'
+            icon: '💀',
+            highlight: summary.total_deaths === 0 ? 'zero-deaths' : 'has-deaths'
         },
         {
             label: 'Total Recovered',
@@ -48,19 +49,27 @@ export default function SimulationResults({ results }) {
                 {metrics.map((metric, index) => (
                     <div
                         key={index}
-                        className="bg-gray-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl border border-gray-600 hover:border-gray-500 transition-all duration-300"
+                        className={`bg-gray-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl border transition-all duration-300 ${
+                            metric.highlight === 'zero-deaths' ? 'border-green-600 hover:border-green-500' :
+                            metric.highlight === 'has-deaths' ? 'border-red-600 hover:border-red-500' :
+                            'border-gray-600 hover:border-gray-500'
+                        }`}
                     >
                         <div className="flex items-center justify-between mb-3">
                             <span className="text-4xl">{metric.icon}</span>
                             <span className="text-sm font-semibold text-gray-300 uppercase tracking-wide">{metric.label}</span>
                         </div>
-                        <div className="text-4xl font-bold">{metric.value}</div>
+                        <div className={`text-4xl font-bold ${
+                            metric.highlight === 'zero-deaths' ? 'text-green-400' :
+                            metric.highlight === 'has-deaths' ? 'text-red-400' :
+                            ''
+                        }`}>{metric.value}</div>
                     </div>
                 ))}
             </div>
 
             {/* Additional Stats */}
-            <div className="mt-8 grid grid-cols-2 gap-6">
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-800 rounded-2xl p-6 border-2 border-gray-600 shadow-lg hover:shadow-xl transition-all">
                     <div className="text-gray-300 font-semibold mb-2 flex items-center gap-2">
                         <span>🦠</span>
@@ -75,8 +84,26 @@ export default function SimulationResults({ results }) {
                         <span>💉</span>
                         <span>Total Vaccinated</span>
                     </div>
-                    <div className="text-3xl font-bold text-white">
+                    <div className={`text-3xl font-bold ${summary.total_vaccinated > 0 ? 'text-purple-400' : 'text-gray-500'}`}>
                         {(summary.total_vaccinated || 0).toLocaleString()}
+                    </div>
+                </div>
+                <div className="bg-gray-800 rounded-2xl p-6 border-2 border-red-600 shadow-lg hover:shadow-xl transition-all">
+                    <div className="text-red-300 font-semibold mb-2 flex items-center gap-2">
+                        <span>💀</span>
+                        <span>Total Deaths</span>
+                    </div>
+                    <div className={`text-3xl font-bold ${summary.total_deaths > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        {(summary.total_deaths || 0).toLocaleString()}
+                    </div>
+                </div>
+                <div className="bg-gray-800 rounded-2xl p-6 border-2 border-gray-600 shadow-lg hover:shadow-xl transition-all">
+                    <div className="text-gray-300 font-semibold mb-2 flex items-center gap-2">
+                        <span>🏥</span>
+                        <span>Total Hospitalized</span>
+                    </div>
+                    <div className={`text-3xl font-bold ${summary.total_hospitalized > 0 ? 'text-orange-400' : 'text-gray-500'}`}>
+                        {(summary.total_hospitalized || 0).toLocaleString()}
                     </div>
                 </div>
             </div>

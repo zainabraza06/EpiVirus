@@ -209,9 +209,14 @@ export default function EpidemicChart({ history }) {
                     <div className="text-xs text-gray-300 uppercase">Total Recovered</div>
                     <div className="text-xl font-bold text-blue-400">{recovered[recovered.length - 1]}</div>
                 </div>
-                <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                <div className={`bg-gray-700 rounded-lg p-3 border-2 ${deceased[deceased.length - 1] > 0 ? 'border-red-600' : 'border-green-600'}`}>
                     <div className="text-xs text-gray-300 uppercase">Total Deaths</div>
-                    <div className="text-xl font-bold text-white">{deceased[deceased.length - 1] || 0}</div>
+                    <div className={`text-xl font-bold ${deceased[deceased.length - 1] > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        {deceased[deceased.length - 1] || 0}
+                    </div>
+                    {deceased[deceased.length - 1] === 0 && (
+                        <div className="text-xs text-green-400 mt-1">✓ Zero fatalities</div>
+                    )}
                 </div>
             </div>
         </div>

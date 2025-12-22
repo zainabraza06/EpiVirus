@@ -235,13 +235,20 @@ export default function AnimationTab({ simulationResults }) {
 
                         {/* Key Metrics */}
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-red-900 bg-opacity-40 p-2 rounded border border-red-700">
-                                <div className="text-xs text-red-300 mb-1">💀 Deaths</div>
-                                <div className="text-lg font-bold text-red-400">{currentData.D}</div>
+                            <div className={`p-2 rounded border-2 ${currentData.D > 0 ? 'bg-red-900 bg-opacity-40 border-red-700' : 'bg-green-900 bg-opacity-40 border-green-700'}`}>
+                                <div className={`text-xs mb-1 ${currentData.D > 0 ? 'text-red-300' : 'text-green-300'}`}>
+                                    {currentData.D > 0 ? '💀 Deaths' : '✓ Deaths'}
+                                </div>
+                                <div className={`text-lg font-bold ${currentData.D > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                    {currentData.D || 0}
+                                </div>
+                                {currentData.D === 0 && (
+                                    <div className="text-xs text-green-400">Zero fatalities!</div>
+                                )}
                             </div>
                             <div className="bg-blue-900 bg-opacity-40 p-2 rounded border border-blue-700">
                                 <div className="text-xs text-blue-300 mb-1">💙 Recovered</div>
-                                <div className="text-lg font-bold text-blue-400">{currentData.R}</div>
+                                <div className="text-lg font-bold text-blue-400">{currentData.R || 0}</div>
                             </div>
                         </div>
                     </div>
@@ -420,8 +427,9 @@ function Unique3DVisualization({ currentData, currentDay, isPlaying }) {
                     label="Deceased"
                     value={currentData.D}
                     percent={dPercent}
-                    icon="⚫"
+                    icon="💀"
                     delay={0.4}
+                    isDeaths={true}
                 />
             </div>
 
@@ -450,7 +458,10 @@ function Unique3DVisualization({ currentData, currentDay, isPlaying }) {
     )
 }
 
-function Floating3DCard({ label, value, percent, icon, delay }) {
+function Floating3DCard({ label, value, percent, icon, delay, isDeaths = false }) {
+    const actualValue = value || 0;
+    const isZeroDeaths = isDeaths && actualValue === 0;
+    
     return (
         <div
             className="relative group cursor-pointer"
@@ -460,17 +471,32 @@ function Floating3DCard({ label, value, percent, icon, delay }) {
             }}
         >
             <div
-                className="bg-gray-700 p-4 rounded-xl shadow-2xl border border-gray-600 hover:border-gray-500 transition-all duration-300"
+                className={`bg-gray-700 p-4 rounded-xl shadow-2xl border-2 transition-all duration-300 ${
+                    isDeaths 
+                        ? (isZeroDeaths ? 'border-green-600 hover:border-green-500 bg-green-900 bg-opacity-20' : 'border-red-600 hover:border-red-500 bg-red-900 bg-opacity-20')
+                        : 'border-gray-600 hover:border-gray-500'
+                }`}
                 style={{
                     transformStyle: 'preserve-3d',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)'
+                    boxShadow: isDeaths 
+                        ? (isZeroDeaths ? '0 10px 30px rgba(34, 197, 94, 0.4)' : '0 10px 30px rgba(220, 38, 38, 0.4)')
+                        : '0 10px 30px rgba(0, 0, 0, 0.4)'
                 }}
             >
                 <div className="text-center text-white">
-                    <div className="text-3xl mb-2">{icon}</div>
-                    <div className="text-2xl font-bold">{value}</div>
-                    <div className="text-xs text-gray-300 mt-1">{label}</div>
-                    <div className="text-xs font-semibold text-gray-300 mt-1">{percent.toFixed(1)}%</div>
+                    <div className="text-3xl mb-2">{isZeroDeaths ? '✓' : icon}</div>
+                    <div className={`text-2xl font-bold ${isDeaths ? (isZeroDeaths ? 'text-green-400' : 'text-red-400') : ''}`}>
+                        {actualValue}
+                    </div>
+                    <div className={`text-xs mt-1 ${isDeaths ? (isZeroDeaths ? 'text-green-300' : 'text-red-300') : 'text-gray-300'}`}>
+                        {label}
+                    </div>
+                    <div className={`text-xs font-semibold mt-1 ${isDeaths ? (isZeroDeaths ? 'text-green-300' : 'text-red-300') : 'text-gray-300'}`}>
+                        {percent.toFixed(1)}%
+                    </div>
+                    {isZeroDeaths && (
+                        <div className="text-xs text-green-400 mt-1 font-semibold">Zero fatalities!</div>
+                    )}
                 </div>
             </div>
 
@@ -728,7 +754,7 @@ function NetworkGlobeVisualization({ currentData, currentDay, isPlaying, simulat
                     label="Deceased"
                     value={currentData.D}
                     percent={(currentData.D / total) * 100}
-                    icon="⚫"
+                    icon="💀"
                     delay={0.4}
                 />
             </div>

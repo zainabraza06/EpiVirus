@@ -20,11 +20,16 @@ function Node({ position, state, size = 0.5 }) {
 
     const color = colorMap[state] || '#FFFFFF'
 
-    // Pulsing animation for infected nodes
-    useFrame((state) => {
-        if (meshRef.current && state === 'I') {
-            const scale = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.2
-            meshRef.current.scale.setScalar(scale)
+    // Pulsing animation for infected nodes, make deceased nodes fade
+    useFrame((frameState) => {
+        if (meshRef.current) {
+            if (state === 'I') {
+                const scale = 1 + Math.sin(frameState.clock.elapsedTime * 3) * 0.2
+                meshRef.current.scale.setScalar(scale)
+            } else if (state === 'D') {
+                // Deceased nodes are smaller and dimmer
+                meshRef.current.scale.setScalar(0.6)
+            }
         }
     })
 
@@ -33,8 +38,10 @@ function Node({ position, state, size = 0.5 }) {
             <sphereGeometry args={[size, 16, 16]} />
             <meshStandardMaterial
                 color={color}
-                emissive={state === 'I' ? '#FF0000' : '#000000'}
+                emissive={state === 'I' ? '#FF0000' : state === 'D' ? '#000000' : '#000000'}
                 emissiveIntensity={state === 'I' ? 0.5 : 0}
+                opacity={state === 'D' ? 0.6 : 1.0}
+                transparent={state === 'D'}
             />
         </mesh>
     )
@@ -174,8 +181,14 @@ export default function Network3D({ simulationData }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                        <span>Deceased: {stats.D}</span>
+                        <span className="font-semibold">Deceased: {stats.D}</span>
                     </div>
+                    {stats.V > 0 && (
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                            <span>Vaccinated: {stats.V}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -147,12 +147,18 @@ export default function OverviewTab({
                                             {simulationHistory.history.R[simulationHistory.history.R.length - 1]}
                                         </div>
                                     </div>
-                                    <div className="bg-gray-700 p-4 rounded-xl text-center border border-red-600">
-                                        <div className="text-red-500 text-2xl mb-1">💀</div>
+                                    <div className={`bg-gray-700 p-4 rounded-xl text-center border-2 ${(simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0) > 0 ? 'border-red-600' : 'border-green-600'}`}>
+                                        <div className={`text-2xl mb-1 ${(simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0) > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                            {(simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0) > 0 ? '💀' : '✓'}
+                                        </div>
                                         <div className="text-xs text-gray-400 mb-1">Total Deaths</div>
-                                        <div className="text-xl font-bold text-red-400">
+                                        <div className={`text-xl font-bold ${(simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0) > 0 ? 'text-red-400' : 'text-green-400'}`}>
                                             {simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0}
                                         </div>
+                                        {(simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0) === 0 && (
+                                            <div className="text-xs text-green-400 mt-1">Zero fatalities!</div>
+                                        )}
+                                    </div>
                                     </div>
                                     <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
                                         <div className="text-purple-400 text-2xl mb-1">🔢</div>

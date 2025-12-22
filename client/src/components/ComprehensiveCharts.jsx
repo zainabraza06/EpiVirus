@@ -273,9 +273,9 @@ export function SimulationSummary({ simulationResults }) {
     const totalDeaths = history.D?.[lastDay] || 0
     const totalPopulation = history.S[0] + history.I[0] + history.R[0]
     const attackRate = ((totalRecovered + totalDeaths) / totalPopulation * 100).toFixed(1)
-    const caseFatalityRate = totalDeaths > 0 && (totalRecovered + totalDeaths) > 0
+    const caseFatalityRate = (totalRecovered + totalDeaths) > 0
         ? (totalDeaths / (totalRecovered + totalDeaths) * 100).toFixed(2)
-        : 0.00
+        : '0.00'
 
     const totalVaccinated = detailed_data?.vaccination_data?.total_vaccinated || 0
     const totalHospitalized = detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0
@@ -290,11 +290,10 @@ export function SimulationSummary({ simulationResults }) {
                 <p>□ {totalPopulation} Population | {lastDay} Days</p>
                 <p>□ Attack Rate: {attackRate}%</p>
                 <p>□ Peak Infections: {peakInfections} (Day {peakDay})</p>
-                <p>□ Total Deaths: {totalDeaths}</p>
-                <p>□ Case Fatality Rate: {caseFatalityRate}%</p>
-                <p>□ Total Vaccinated: {totalVaccinated}</p>
-                <p>□ Total Hospitalized: {totalHospitalized}</p>
-                <p>□ Total Hospitalized: {totalHospitalized}</p>
+                <p>□ Total Deaths: <span className={totalDeaths === 0 ? 'text-green-400 font-bold' : 'text-red-400'}>{totalDeaths}</span> {totalDeaths === 0 && '✓'}</p>
+                <p>□ Case Fatality Rate: <span className={parseFloat(caseFatalityRate) === 0 ? 'text-green-400 font-bold' : 'text-red-400'}>{caseFatalityRate}%</span> {parseFloat(caseFatalityRate) === 0 && '✓'}</p>
+                <p>□ Total Vaccinated: <span className={totalVaccinated === 0 ? 'text-gray-400' : 'text-purple-400'}>{totalVaccinated || 0}</span></p>
+                <p>□ Total Hospitalized: <span className={totalHospitalized === 0 ? 'text-gray-400' : 'text-yellow-400'}>{totalHospitalized || 0}</span></p>
                 <p>□ Final Susceptible: {finalSusceptible}</p>
                 <p>□ Total Recovered: {totalRecovered}</p>
             </div>
@@ -554,8 +553,8 @@ export function MobilityDistributionPie({ mobilityData }) {
 
     const data = mobilityData.counts.map((count, i) => ({
         name: `${mobilityData.bins[i].toFixed(1)}-${mobilityData.bins[i + 1]?.toFixed(1) || '1.0'}`,
-        value: count
-    })).filter(d => d.value > 0)
+        value: count || 0.1
+    }))
 
     const COLORS_MOBILITY = ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00', '#EF6C00', '#E65100']
 
@@ -768,7 +767,7 @@ export function AgeDistributionPie({ ageData }) {
     const data = ageData.counts.map((count, i) => ({
         name: `${ageData.bins[i]}-${ageData.bins[i + 1] || '+'}`,
         value: count
-    })).filter(d => d.value > 0)
+    })).filter(d => d.value > 0 || ageData.counts.every(c => c === 0))
 
     const COLORS_PIE = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739']
 
@@ -850,7 +849,16 @@ export function DegreeDistributionChart({ degreeData }) {
 
 // 8. R-Effective Over Time
 export function REffectiveChart({ rEffectiveHistory }) {
-    if (!rEffectiveHistory || rEffectiveHistory.length === 0) return null
+    if (!rEffectiveHistory || rEffectiveHistory.length === 0) {
+        return (
+            <div className="bg-gray-800 rounded-lg shadow-xl p-6">
+                <h3 className="text-2xl font-bold mb-4 text-white">📉 R-Effective Over Time</h3>
+                <div className="flex items-center justify-center h-64 text-gray-400">
+                    <p>No R-Effective data available yet. Run simulation for longer duration.</p>
+                </div>
+            </div>
+        )
+    }
 
     const data = rEffectiveHistory.map((r, i) => ({
         day: i,
@@ -1160,10 +1168,10 @@ export function PopulationStateTreemap({ history }) {
             },
             {
                 name: 'Deceased',
-                size: history.D?.[lastDay] || 1,
+                size: Math.max(history.D?.[lastDay] || 0, 1),
                 fill: '#757575'
             }
-        ].filter(d => d.size > 0)
+        ]
     }
 
     const COLORS = ['#4CAF50', '#F44336', '#2196F3', '#757575']
