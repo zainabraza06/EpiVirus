@@ -432,7 +432,7 @@ function App() {
               {/* Detailed Statistics */}
               <div className="mt-6 bg-gradient-to-r from-blue-900 to-purple-900 bg-opacity-40 p-6 rounded-lg">
                 <h3 className="text-xl font-bold text-white mb-4">📈 Key Metrics</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <MetricCard
                     label="Attack Rate"
                     value={`${((simulationResults.summary?.attack_rate || 0) * 100).toFixed(1)}%`}
@@ -446,7 +446,14 @@ function App() {
                   <MetricCard
                     label="Total Deaths"
                     value={simulationResults.summary?.total_deaths || 0}
+                    icon="💀"
+                    color="red"
+                  />
+                  <MetricCard
+                    label="Case Fatality Rate"
+                    value={`${((simulationResults.summary?.case_fatality_rate || 0) * 100).toFixed(2)}%`}
                     icon="💔"
+                    color="red"
                   />
                   <MetricCard
                     label="R Effective"
@@ -698,10 +705,14 @@ function App() {
                   <DetailMetric label="Total Infected" value={simulationResults.summary?.total_infected || 0} />
                   <DetailMetric label="Total Recovered" value={simulationResults.summary?.total_recovered || 0} />
                   <DetailMetric label="Total Deaths" value={simulationResults.summary?.total_deaths || 0} />
+                  <DetailMetric label="Final Susceptible" value={simulationResults.summary?.final_susceptible || 0} />
+                  <DetailMetric label="Total Vaccinated" value={simulationResults.summary?.total_vaccinated || 0} />
                   <DetailMetric label="Peak Day" value={simulationResults.summary?.peak_day || 0} />
                   <DetailMetric label="Peak Infections" value={simulationResults.summary?.peak_infections || 0} />
                   <DetailMetric label="Attack Rate" value={`${((simulationResults.summary?.attack_rate || 0) * 100).toFixed(1)}%`} />
-                  <DetailMetric label="CFR" value={`${((simulationResults.summary?.case_fatality_rate || 0) * 100).toFixed(2)}%`} />
+                  <DetailMetric label="Case Fatality Rate" value={`${((simulationResults.summary?.case_fatality_rate || 0) * 100).toFixed(2)}%`} />
+                  <DetailMetric label="R Effective (Final)" value={(simulationResults.summary?.final_r_effective || 0).toFixed(2)} />
+                  <DetailMetric label="Total Hospitalized" value={simulationResults.summary?.total_hospitalized || 0} />
                 </div>
               </div>
 

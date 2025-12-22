@@ -121,6 +121,50 @@ export default function OverviewTab({
                             </div>
                         </div>
 
+                        {/* Simulation Results Quick View */}
+                        {simulationHistory && simulationHistory.history && (
+                            <div className="mt-8 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
+                                <h3 className="text-xl font-semibold text-white mb-4">📊 Latest Simulation Results</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
+                                        <div className="text-green-400 text-2xl mb-1">😊</div>
+                                        <div className="text-xs text-gray-400 mb-1">Final Susceptible</div>
+                                        <div className="text-xl font-bold text-white">
+                                            {simulationHistory.history.S[simulationHistory.history.S.length - 1]}
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
+                                        <div className="text-red-400 text-2xl mb-1">🦠</div>
+                                        <div className="text-xs text-gray-400 mb-1">Peak Infected</div>
+                                        <div className="text-xl font-bold text-white">
+                                            {Math.max(...simulationHistory.history.I)}
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
+                                        <div className="text-blue-400 text-2xl mb-1">💙</div>
+                                        <div className="text-xs text-gray-400 mb-1">Total Recovered</div>
+                                        <div className="text-xl font-bold text-white">
+                                            {simulationHistory.history.R[simulationHistory.history.R.length - 1]}
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-700 p-4 rounded-xl text-center border border-red-600">
+                                        <div className="text-red-500 text-2xl mb-1">💀</div>
+                                        <div className="text-xs text-gray-400 mb-1">Total Deaths</div>
+                                        <div className="text-xl font-bold text-red-400">
+                                            {simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0}
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
+                                        <div className="text-purple-400 text-2xl mb-1">🔢</div>
+                                        <div className="text-xs text-gray-400 mb-1">R Effective</div>
+                                        <div className="text-xl font-bold text-white">
+                                            {(simulationHistory.summary?.final_r_effective || 0).toFixed(2)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Quick Start Guide */}
                         <div className="mt-8 bg-gray-800 p-8 rounded-2xl border border-gray-700 shadow-xl">
                             <div className="flex items-center gap-3 mb-6">

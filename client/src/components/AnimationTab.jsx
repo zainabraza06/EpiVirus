@@ -223,7 +223,7 @@ export default function AnimationTab({ simulationResults }) {
                         </h3>
 
                         {/* Visual Bar Chart - Compact */}
-                        <div className="bg-gray-800 p-3 rounded-lg">
+                        <div className="bg-gray-800 p-3 rounded-lg mb-3">
                             <h4 className="text-sm font-semibold text-gray-300 mb-2">Population Distribution</h4>
                             <div className="space-y-2">
                                 <BarRow label="Susceptible" value={currentData.S} max={simulationResults.summary?.initial_population || 1000} color="bg-green-500" />
@@ -231,6 +231,18 @@ export default function AnimationTab({ simulationResults }) {
                                 <BarRow label="Infected" value={currentData.I} max={simulationResults.summary?.initial_population || 1000} color="bg-red-500" />
                                 <BarRow label="Recovered" value={currentData.R} max={simulationResults.summary?.initial_population || 1000} color="bg-blue-500" />
                                 <BarRow label="Deceased" value={currentData.D} max={simulationResults.summary?.initial_population || 1000} color="bg-gray-500" />
+                            </div>
+                        </div>
+
+                        {/* Key Metrics */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-red-900 bg-opacity-40 p-2 rounded border border-red-700">
+                                <div className="text-xs text-red-300 mb-1">💀 Deaths</div>
+                                <div className="text-lg font-bold text-red-400">{currentData.D}</div>
+                            </div>
+                            <div className="bg-blue-900 bg-opacity-40 p-2 rounded border border-blue-700">
+                                <div className="text-xs text-blue-300 mb-1">💙 Recovered</div>
+                                <div className="text-lg font-bold text-blue-400">{currentData.R}</div>
                             </div>
                         </div>
                     </div>
