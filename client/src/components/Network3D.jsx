@@ -102,7 +102,7 @@ export default function Network3D({ simulationData }) {
     const [currentDay, setCurrentDay] = useState(0)
     const [isPlaying, setIsPlaying] = useState(false)
     const [speed, setSpeed] = useState(100) // ms per day
-    
+
     // Get cumulative deaths from backend summary
     const cumulativeDeaths = simulationData?.summary?.total_deaths ?? 0
 

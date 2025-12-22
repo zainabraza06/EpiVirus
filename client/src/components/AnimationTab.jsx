@@ -82,10 +82,10 @@ export default function AnimationTab({ simulationResults }) {
         R: simulationResults.history?.R?.[currentFrame] || 0,
         D: simulationResults.history?.D?.[currentFrame] || 0
     }
-    
+
     // Get cumulative deaths from backend summary
     const cumulativeDeaths = simulationResults.summary?.total_deaths ?? 0
-    
+
     // Debug logging
     if (currentFrame === 0) {
         console.log('AnimationTab - Full history.D array:', simulationResults.history?.D)
