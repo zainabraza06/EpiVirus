@@ -203,8 +203,8 @@ export default function AnimationTab({ simulationResults }) {
                                         key={fps}
                                         onClick={() => setPlaybackSpeed(1000 / fps)}
                                         className={`py-2 px-3 rounded-lg font-semibold transition-all text-sm border ${Math.abs((1000 / playbackSpeed) - fps) < 0.5
-                                                ? 'bg-indigo-600 text-white border-indigo-500'
-                                                : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'
+                                            ? 'bg-indigo-600 text-white border-indigo-500'
+                                            : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'
                                             }`}
                                     >
                                         {fps}
@@ -461,7 +461,7 @@ function Unique3DVisualization({ currentData, currentDay, isPlaying }) {
 function Floating3DCard({ label, value, percent, icon, delay, isDeaths = false }) {
     const actualValue = value || 0;
     const isZeroDeaths = isDeaths && actualValue === 0;
-    
+
     return (
         <div
             className="relative group cursor-pointer"
@@ -471,14 +471,13 @@ function Floating3DCard({ label, value, percent, icon, delay, isDeaths = false }
             }}
         >
             <div
-                className={`bg-gray-700 p-4 rounded-xl shadow-2xl border-2 transition-all duration-300 ${
-                    isDeaths 
+                className={`bg-gray-700 p-4 rounded-xl shadow-2xl border-2 transition-all duration-300 ${isDeaths
                         ? (isZeroDeaths ? 'border-green-600 hover:border-green-500 bg-green-900 bg-opacity-20' : 'border-red-600 hover:border-red-500 bg-red-900 bg-opacity-20')
                         : 'border-gray-600 hover:border-gray-500'
-                }`}
+                    }`}
                 style={{
                     transformStyle: 'preserve-3d',
-                    boxShadow: isDeaths 
+                    boxShadow: isDeaths
                         ? (isZeroDeaths ? '0 10px 30px rgba(34, 197, 94, 0.4)' : '0 10px 30px rgba(220, 38, 38, 0.4)')
                         : '0 10px 30px rgba(0, 0, 0, 0.4)'
                 }}

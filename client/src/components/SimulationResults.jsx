@@ -49,21 +49,19 @@ export default function SimulationResults({ results }) {
                 {metrics.map((metric, index) => (
                     <div
                         key={index}
-                        className={`bg-gray-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl border transition-all duration-300 ${
-                            metric.highlight === 'zero-deaths' ? 'border-green-600 hover:border-green-500' :
-                            metric.highlight === 'has-deaths' ? 'border-red-600 hover:border-red-500' :
-                            'border-gray-600 hover:border-gray-500'
-                        }`}
+                        className={`bg-gray-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl border transition-all duration-300 ${metric.highlight === 'zero-deaths' ? 'border-green-600 hover:border-green-500' :
+                                metric.highlight === 'has-deaths' ? 'border-red-600 hover:border-red-500' :
+                                    'border-gray-600 hover:border-gray-500'
+                            }`}
                     >
                         <div className="flex items-center justify-between mb-3">
                             <span className="text-4xl">{metric.icon}</span>
                             <span className="text-sm font-semibold text-gray-300 uppercase tracking-wide">{metric.label}</span>
                         </div>
-                        <div className={`text-4xl font-bold ${
-                            metric.highlight === 'zero-deaths' ? 'text-green-400' :
-                            metric.highlight === 'has-deaths' ? 'text-red-400' :
-                            ''
-                        }`}>{metric.value}</div>
+                        <div className={`text-4xl font-bold ${metric.highlight === 'zero-deaths' ? 'text-green-400' :
+                                metric.highlight === 'has-deaths' ? 'text-red-400' :
+                                    ''
+                            }`}>{metric.value}</div>
                     </div>
                 ))}
             </div>
