@@ -450,7 +450,7 @@ function App() {
                   />
                   <MetricCard
                     label="R Effective"
-                    value={(simulationResults.summary?.final_R_effective || 0).toFixed(2)}
+                    value={(simulationResults.summary?.final_r_effective || 0).toFixed(2)}
                     icon="🔄"
                   />
                 </div>

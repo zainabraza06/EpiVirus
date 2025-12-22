@@ -11,7 +11,7 @@ export default function EpidemicChart({ history }) {
             ...history.S,
             ...history.I,
             ...history.R,
-            ...history.D || []
+            ...(history.D || [])
         )
 
         return {

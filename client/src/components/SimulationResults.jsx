@@ -30,7 +30,7 @@ export default function SimulationResults({ results }) {
         },
         {
             label: 'R Effective',
-            value: (summary.final_R_effective || 0).toFixed(2),
+            value: (summary.final_r_effective || 0).toFixed(2),
             icon: '🔢'
         },
     ]
