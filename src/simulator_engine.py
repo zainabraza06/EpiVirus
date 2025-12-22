@@ -893,6 +893,7 @@ class UltimateSimulator:
             'total_recovered': self.stats['total_recovered'],
             'total_deaths': self.stats['total_deaths'],
             'total_vaccinated': self.stats['total_vaccinated'],
+            'total_hospitalized': self.stats['total_hospitalized'],
             'peak_infections': self.stats['peak_infections'],
             'peak_day': self.stats['peak_day'],
             'attack_rate': self.stats['total_infected'] / len(self.G),

@@ -82,6 +82,12 @@ export default function AnimationTab({ simulationResults }) {
         R: simulationResults.history?.R?.[currentFrame] || 0,
         D: simulationResults.history?.D?.[currentFrame] || 0
     }
+    
+    // Debug logging
+    if (currentFrame === 0) {
+        console.log('AnimationTab - Full history.D array:', simulationResults.history?.D)
+        console.log('AnimationTab - Max deaths in history:', Math.max(...(simulationResults.history?.D || [0])))
+    }
 
     return (
         <div className="space-y-6">

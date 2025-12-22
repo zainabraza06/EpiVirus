@@ -265,8 +265,13 @@ export function HealthcareSystemChart({ severityData, capacity = 50 }) {
 export function SimulationSummary({ simulationResults }) {
     if (!simulationResults) return null
 
-    const { history, detailed_data } = simulationResults
+    const { history, detailed_data, summary } = simulationResults
     const lastDay = history.S.length - 1
+    
+    // Debug logging
+    console.log('SimulationSummary - history.D:', history.D)
+    console.log('SimulationSummary - summary:', summary)
+    
     const peakInfections = Math.max(...history.I)
     const peakDay = history.I.indexOf(peakInfections)
     const totalRecovered = history.R[lastDay]
@@ -277,9 +282,17 @@ export function SimulationSummary({ simulationResults }) {
         ? (totalDeaths / (totalRecovered + totalDeaths) * 100).toFixed(2)
         : '0.00'
 
-    const totalVaccinated = detailed_data?.vaccination_data?.total_vaccinated || 0
-    const totalHospitalized = detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0
+    // Use summary values from backend if available
+    const totalVaccinated = summary?.total_vaccinated ?? 0
+    const totalHospitalized = summary?.total_hospitalized ?? (detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0)
     const finalSusceptible = history.S[lastDay]
+    
+    console.log('SimulationSummary - Calculated values:', {
+        totalDeaths,
+        totalVaccinated,
+        totalHospitalized,
+        caseFatalityRate
+    })
 
     return (
         <div className="bg-blue-900 text-white rounded-lg shadow-xl p-6">
