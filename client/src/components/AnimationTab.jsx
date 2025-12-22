@@ -82,11 +82,16 @@ export default function AnimationTab({ simulationResults }) {
         R: simulationResults.history?.R?.[currentFrame] || 0,
         D: simulationResults.history?.D?.[currentFrame] || 0
     }
-
+    
+    // Get cumulative deaths from backend summary
+    const cumulativeDeaths = simulationResults.summary?.total_deaths ?? 0
+    
     // Debug logging
     if (currentFrame === 0) {
         console.log('AnimationTab - Full history.D array:', simulationResults.history?.D)
         console.log('AnimationTab - Max deaths in history:', Math.max(...(simulationResults.history?.D || [0])))
+        console.log('AnimationTab - Cumulative deaths from summary:', cumulativeDeaths)
+        console.log('AnimationTab - Summary object:', simulationResults.summary)
     }
 
     return (
@@ -243,15 +248,28 @@ export default function AnimationTab({ simulationResults }) {
                         <div className="grid grid-cols-2 gap-2">
                             <div className={`p-2 rounded border-2 ${currentData.D > 0 ? 'bg-red-900 bg-opacity-40 border-red-700' : 'bg-green-900 bg-opacity-40 border-green-700'}`}>
                                 <div className={`text-xs mb-1 ${currentData.D > 0 ? 'text-red-300' : 'text-green-300'}`}>
-                                    {currentData.D > 0 ? '💀 Deaths' : '✓ Deaths'}
+                                    {currentData.D > 0 ? '💀 Deaths (Current)' : '✓ Deaths (Current)'}
                                 </div>
                                 <div className={`text-lg font-bold ${currentData.D > 0 ? 'text-red-400' : 'text-green-400'}`}>
                                     {currentData.D || 0}
                                 </div>
                                 {currentData.D === 0 && (
+                                    <div className="text-xs text-green-400">No deaths this day!</div>
+                                )}
+                            </div>
+                            <div className={`p-2 rounded border-2 ${cumulativeDeaths > 0 ? 'bg-red-900 bg-opacity-40 border-red-700' : 'bg-green-900 bg-opacity-40 border-green-700'}`}>
+                                <div className={`text-xs mb-1 ${cumulativeDeaths > 0 ? 'text-red-300' : 'text-green-300'}`}>
+                                    {cumulativeDeaths > 0 ? '💀 Total Deaths' : '✓ Total Deaths'}
+                                </div>
+                                <div className={`text-lg font-bold ${cumulativeDeaths > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                    {cumulativeDeaths}
+                                </div>
+                                {cumulativeDeaths === 0 && (
                                     <div className="text-xs text-green-400">Zero fatalities!</div>
                                 )}
                             </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
                             <div className="bg-blue-900 bg-opacity-40 p-2 rounded border border-blue-700">
                                 <div className="text-xs text-blue-300 mb-1">💙 Recovered</div>
                                 <div className="text-lg font-bold text-blue-400">{currentData.R || 0}</div>

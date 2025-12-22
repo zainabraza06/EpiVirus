@@ -102,6 +102,9 @@ export default function Network3D({ simulationData }) {
     const [currentDay, setCurrentDay] = useState(0)
     const [isPlaying, setIsPlaying] = useState(false)
     const [speed, setSpeed] = useState(100) // ms per day
+    
+    // Get cumulative deaths from backend summary
+    const cumulativeDeaths = simulationData?.summary?.total_deaths ?? 0
 
     // Generate 3D layout from simulation data
     const { nodes, edges, maxDay } = useMemo(() => {
@@ -181,7 +184,11 @@ export default function Network3D({ simulationData }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                        <span className="font-semibold">Deceased: {stats.D}</span>
+                        <span className="font-semibold">Deceased (Current): {stats.D}</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${cumulativeDeaths > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        <div className={`w-3 h-3 rounded-full ${cumulativeDeaths > 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                        <span className="font-bold">Total Deaths: {cumulativeDeaths} {cumulativeDeaths === 0 && '✓'}</span>
                     </div>
                     {stats.V > 0 && (
                         <div className="flex items-center gap-2">
