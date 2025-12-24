@@ -42,21 +42,21 @@ class DiseaseParameters:
     p_critical: float = 0.05               # Critical, ICU needed
     
     # Hospitalization and mortality
-    hospitalization_rate: float = 0.15     # Overall hospitalization rate
-    icu_rate: float = 0.05                 #% of hospitalized needing ICU
-    mortality_rate: float = 0.02           # Overall case fatality rate
+    hospitalization_rate: float = 0.25     # Overall hospitalization rate (25%)
+    icu_rate: float = 0.08                 # % of hospitalized needing ICU (8%)
+    mortality_rate: float = 0.03           # Overall case fatality rate (3%)
     
-    # Age-stratified parameters
+    # Age-stratified parameters - REALISTIC COVID-19 DATA
     age_stratification: Dict[str, Dict[str, float]] = field(default_factory=lambda: {
-        '0-9':   {'severity': 0.01,  'hospitalization': 0.005, 'mortality': 0.01, 'susceptibility': 0.5},
-        '10-19': {'severity': 0.02,  'hospitalization': 0.01,  'mortality': 0.02, 'susceptibility': 0.7},
-        '20-29': {'severity': 0.05,  'hospitalization': 0.02,  'mortality': 0.1,  'susceptibility': 0.9},
-        '30-39': {'severity': 0.1,   'hospitalization': 0.03,  'mortality': 0.3,  'susceptibility': 0.9},
-        '40-49': {'severity': 0.15,  'hospitalization': 0.05,  'mortality': 0.1,   'susceptibility': 0.9},
-        '50-59': {'severity': 0.25,  'hospitalization': 0.08,  'mortality': 0.3,   'susceptibility': 0.9},
-        '60-69': {'severity': 0.4,   'hospitalization': 0.15,  'mortality': 0.8,   'susceptibility': 0.9},
-        '70-79': {'severity': 0.6,   'hospitalization': 0.25,  'mortality': 0.7,   'susceptibility': 0.9},
-        '80+':   {'severity': 0.8,   'hospitalization': 0.35,  'mortality': 0.25,   'susceptibility': 0.9}
+        '0-9':   {'severity': 0.02,  'hospitalization': 0.08, 'mortality': 0.001, 'susceptibility': 0.5},
+        '10-19': {'severity': 0.03,  'hospitalization': 0.12, 'mortality': 0.002, 'susceptibility': 0.7},
+        '20-29': {'severity': 0.05,  'hospitalization': 0.20, 'mortality': 0.005, 'susceptibility': 0.9},
+        '30-39': {'severity': 0.08,  'hospitalization': 0.35, 'mortality': 0.010, 'susceptibility': 0.9},
+        '40-49': {'severity': 0.12,  'hospitalization': 0.50, 'mortality': 0.020, 'susceptibility': 0.9},
+        '50-59': {'severity': 0.18,  'hospitalization': 0.65, 'mortality': 0.050, 'susceptibility': 0.9},
+        '60-69': {'severity': 0.28,  'hospitalization': 0.80, 'mortality': 0.120, 'susceptibility': 0.95},
+        '70-79': {'severity': 0.42,  'hospitalization': 0.90, 'mortality': 0.280, 'susceptibility': 0.95},
+        '80+':   {'severity': 0.58,  'hospitalization': 0.95, 'mortality': 0.450, 'susceptibility': 0.95}
     })
     
     # Intervention effects
@@ -523,15 +523,15 @@ class DiseaseProgression:
         elif symptoms == 'mild':
             inc_mean = disease.incubation_period['mean']
             inf_mean = disease.infectious_period['mean'] * 0.9
-            hospitalization_prob = 0.01 * age_params['hospitalization']
+            hospitalization_prob = 0.02 * age_params['hospitalization']  # Increased from 0.01
         elif symptoms == 'severe':
             inc_mean = disease.incubation_period['mean'] * 0.9
             inf_mean = disease.infectious_period['mean'] * 1.2
-            hospitalization_prob = 0.7 * age_params['hospitalization']
+            hospitalization_prob = 0.80 * age_params['hospitalization']  # Increased from 0.7
         else:  # critical
             inc_mean = disease.incubation_period['mean'] * 0.8
             inf_mean = disease.infectious_period['mean'] * 1.5
-            hospitalization_prob = 0.9 * age_params['hospitalization']
+            hospitalization_prob = 0.95 * age_params['hospitalization']  # Increased from 0.9
         
         # Sample actual days from distributions - ensure minimum values
         incubation_days = max(1, int(np.random.normal(
@@ -556,22 +556,22 @@ class DiseaseProgression:
         # Base mortality from age
         base_mortality = age_params['mortality']
         
-        # Adjust mortality based on symptoms
+        # Adjust mortality based on symptoms - HIGHER RATES FOR REALISTIC SIMULATION
         if symptoms == 'asymptomatic':
-            mortality_prob = base_mortality * 0.01  # Very low
+            mortality_prob = base_mortality * 0.05  # Very low
         elif symptoms == 'mild':
-            mortality_prob = base_mortality * 0.1   # Low
+            mortality_prob = base_mortality * 0.5   # Low-moderate
         elif symptoms == 'severe':
-            mortality_prob = base_mortality * 3.0   # Moderate
+            mortality_prob = base_mortality * 2.5   # Moderate-high
         else:  # critical
-            mortality_prob = base_mortality * 10.0  # High
+            mortality_prob = base_mortality * 8.0   # Very high
         
         # Apply vaccine protection
         if vaccination_status:
             ve_severity = disease.vaccine_efficacy['severity']
             mortality_prob *= (1 - ve_severity * 0.8)  # Vaccines protect against death
         
-        # Ensure probability is reasonable
+        # Ensure probability is reasonable but can be high for critical cases
         mortality_prob = min(0.95, max(0, mortality_prob))
         
         # Roll for death

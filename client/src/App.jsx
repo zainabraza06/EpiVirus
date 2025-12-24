@@ -48,6 +48,8 @@ import {
   InfectionWaveChart,
   PopulationStateTreemap,
   AgeInfectionScatter,
+  DailyDeathsChart,
+  HospitalizationChart
   DegreeDistributionRadial
 } from './components/ComprehensiveCharts'
 import Network3D from './components/Network3D'
@@ -513,6 +515,22 @@ function App() {
                     <HealthcareSystemChart
                       severityData={simulationResults.detailed_data.severity_breakdown}
                       capacity={simulationResults.detailed_data.hospital_capacity?.capacity || 50}
+                    />
+                  )}
+
+                  {/* Daily Deaths */}
+                  {simulationResults.detailed_data?.daily_deaths && (
+                    <DailyDeathsChart
+                      dailyDeaths={simulationResults.detailed_data.daily_deaths}
+                      time={simulationResults.history?.time}
+                    />
+                  )}
+
+                  {/* Daily Hospitalizations */}
+                  {simulationResults.detailed_data?.daily_hospitalizations && (
+                    <HospitalizationChart
+                      dailyHospitalizations={simulationResults.detailed_data.daily_hospitalizations}
+                      time={simulationResults.history?.time}
                     />
                   )}
 

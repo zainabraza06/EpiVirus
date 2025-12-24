@@ -53,6 +53,10 @@ class UltimateSimulator:
             'r_effective': []  # Time-varying R
         }
         
+        # Track daily deaths separately
+        self.daily_deaths_count = 0
+        self.previous_total_deaths = 0
+        
         # Performance optimization
         self._cache_neighbors = {}
         self._last_R0_calculation = 0
@@ -638,14 +642,19 @@ class UltimateSimulator:
         
         elif action == 'die':
             self.G.nodes[node]['state'] = 'D'
-            
+
             # Remove from all sets
             for state_set in self.state_sets.values():
                 state_set.discard(node)
             for inf_set in self.infectious_subsets.values():
                 inf_set.discard(node)
-            
+
+            # Add to deaths set so history and UI reflect deceased individuals
+            self.state_sets['D'].add(node)
+
+            # Track death statistics
             self.stats['total_deaths'] += 1
+            self.daily_deaths_count += 1  # Track daily deaths
         
         elif action == 'isolate':
             self.G.nodes[node]['isolated'] = True
@@ -763,6 +772,15 @@ class UltimateSimulator:
             prev_E = self.history['E'][-2] if len(self.history['E']) > 1 else 0
             new_infections = current_E - prev_E
             self.history['new_infections'].append(new_infections)
+        
+        # Record daily deaths
+        daily_deaths = self.stats['total_deaths'] - self.previous_total_deaths
+        self.history['daily_deaths'].append(daily_deaths)
+        self.previous_total_deaths = self.stats['total_deaths']
+        
+        # Record daily new hospitalizations
+        current_hospitalized = len(self.infectious_subsets['Ih']) + len(self.infectious_subsets['Ic'])
+        self.history['daily_hospitalizations'].append(current_hospitalized)
     
     def _update_statistics(self):
         """Update simulation statistics"""
@@ -900,6 +918,9 @@ class UltimateSimulator:
             'case_fatality_rate': (self.stats['total_deaths'] / 
                                   max(1, self.stats['total_infected'])),
             'final_r_effective': (self.stats['r_effective'][-1] 
+                                 if self.stats['r_effective'] else 0),
+            # CamelCase alias for frontend components expecting different key
+            'final_R_effective': (self.stats['r_effective'][-1] 
                                  if self.stats['r_effective'] else 0)
         }
     

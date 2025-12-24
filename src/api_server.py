@@ -320,6 +320,8 @@ async def run_simulation(simulation_id: str, config: SimulationConfig):
         # Get additional detailed data
         detailed_data = {
             'daily_new_cases': daily_new_cases,
+            'daily_deaths': history_serializable.get('daily_deaths', [0] * len(history_serializable['S'])),
+            'daily_hospitalizations': history_serializable.get('daily_hospitalizations', [0] * len(history_serializable['S'])),
             'severity_breakdown': {
                 'asymptomatic': history_serializable.get('Ia', [0] * len(history_serializable['S'])),
                 'mild': history_serializable.get('Im', [0] * len(history_serializable['S'])),

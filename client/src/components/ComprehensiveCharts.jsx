@@ -1303,3 +1303,131 @@ export function DegreeDistributionRadial({ degreeData }) {
         </div>
     )
 }
+
+// NEW: Daily Deaths Chart
+export function DailyDeathsChart({ dailyDeaths, time }) {
+    if (!dailyDeaths || dailyDeaths.length === 0) return null
+
+    const data = (dailyDeaths || []).map((deaths, i) => ({
+        day: i,
+        'Daily Deaths': deaths
+    }))
+
+    // Calculate 7-day moving average
+    const windowSize = 7
+    let movingAvg = []
+    for (let i = 0; i < data.length; i++) {
+        if (i < windowSize - 1) {
+            movingAvg.push(null)
+        } else {
+            const sum = dailyDeaths.slice(i - windowSize + 1, i + 1).reduce((a, b) => a + b, 0)
+            movingAvg.push(sum / windowSize)
+        }
+    }
+
+    const chartData = data.map((d, i) => ({
+        ...d,
+        '7-day average': movingAvg[i]
+    }))
+
+    return (
+        <div className="bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-700">
+            <h3 className="text-2xl font-bold mb-4 text-center text-white">Daily Deaths</h3>
+            <ResponsiveContainer width="100%" height={350}>
+                <ComposedChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis 
+                        dataKey="day"
+                        label={{ value: 'Days', position: 'insideBottom', offset: -5 }}
+                    />
+                    <YAxis 
+                        label={{ value: 'Deaths', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #666' }}
+                        formatter={(value) => value ? value.toFixed(1) : '0'}
+                    />
+                    <Legend />
+                    <Bar 
+                        dataKey="Daily Deaths" 
+                        fill="#DC2626" 
+                        opacity={0.7}
+                        name="Daily Deaths"
+                    />
+                    <Line 
+                        type="monotone" 
+                        dataKey="7-day average" 
+                        stroke="#B91C1C" 
+                        strokeWidth={2.5}
+                        dot={false}
+                        name="7-day Average"
+                    />
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
+    )
+}
+
+// NEW: Hospitalization Chart
+export function HospitalizationChart({ dailyHospitalizations, time }) {
+    if (!dailyHospitalizations || dailyHospitalizations.length === 0) return null
+
+    const data = (dailyHospitalizations || []).map((hosp, i) => ({
+        day: i,
+        'Hospitalized': hosp
+    }))
+
+    // Calculate 7-day moving average
+    const windowSize = 7
+    let movingAvg = []
+    for (let i = 0; i < data.length; i++) {
+        if (i < windowSize - 1) {
+            movingAvg.push(null)
+        } else {
+            const sum = dailyHospitalizations.slice(i - windowSize + 1, i + 1).reduce((a, b) => a + b, 0)
+            movingAvg.push(sum / windowSize)
+        }
+    }
+
+    const chartData = data.map((d, i) => ({
+        ...d,
+        '7-day average': movingAvg[i]
+    }))
+
+    return (
+        <div className="bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-700">
+            <h3 className="text-2xl font-bold mb-4 text-center text-white">Daily Hospitalizations</h3>
+            <ResponsiveContainer width="100%" height={350}>
+                <ComposedChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis 
+                        dataKey="day"
+                        label={{ value: 'Days', position: 'insideBottom', offset: -5 }}
+                    />
+                    <YAxis 
+                        label={{ value: 'Patients', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #666' }}
+                        formatter={(value) => value ? value.toFixed(1) : '0'}
+                    />
+                    <Legend />
+                    <Bar 
+                        dataKey="Hospitalized" 
+                        fill="#9333EA" 
+                        opacity={0.7}
+                        name="Currently Hospitalized"
+                    />
+                    <Line 
+                        type="monotone" 
+                        dataKey="7-day average" 
+                        stroke="#7E22CE" 
+                        strokeWidth={2.5}
+                        dot={false}
+                        name="7-day Average"
+                    />
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
+    )
+}
