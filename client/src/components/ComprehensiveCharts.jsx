@@ -265,7 +265,7 @@ export function HealthcareSystemChart({ severityData, capacity = 50 }) {
 export function SimulationSummary({ simulationResults }) {
     if (!simulationResults) return null
 
-    const { history, detailed_data, summary } = simulationResults
+    const { history, summary } = simulationResults
     const lastDay = history.S.length - 1
 
     // Debug logging
@@ -279,7 +279,7 @@ export function SimulationSummary({ simulationResults }) {
     // Prefer backend summary values if available, fallback to history
     const totalDeaths = summary?.total_deaths ?? (history.D?.[lastDay] || 0)
     const totalVaccinated = summary?.total_vaccinated ?? 0
-    const totalHospitalized = summary?.total_hospitalized ?? (detailed_data?.severity_breakdown?.hospitalized?.[lastDay] || 0)
+    const totalHospitalized = summary?.total_hospitalized ?? 0
 
     const totalPopulation = history.S[0] + history.I[0] + history.R[0]
     const attackRate = ((totalRecovered + totalDeaths) / totalPopulation * 100).toFixed(1)
@@ -429,7 +429,7 @@ export function DailyNewCasesBar({ history }) {
 export function IntegratedRiskModel({ simulationResults }) {
     if (!simulationResults?.history) return null
 
-    const { history, detailed_data, summary } = simulationResults
+    const { history, summary } = simulationResults
     const totalPopulation = history.S[0] + history.I[0] + history.R[0]
     const lastDay = history.S.length - 1
     const peakInfections = Math.max(...history.I)
@@ -637,8 +637,8 @@ export function SocialClusteringPie({ clusteringData }) {
     )
 }
 
-// 1. SEIR Dynamics with Multiple Lines
-export function SEIRDynamicsChart({ history }) {
+// 1. SEIR Dynamics with Multiple Lines - RENAMED TO SEIRDynamicsFiveLineChart
+export function SEIRDynamicsFiveLineChart({ history }) {
     if (!history || !history.S) return null
 
     const data = history.S.map((s, i) => ({
@@ -1305,7 +1305,7 @@ export function DegreeDistributionRadial({ degreeData }) {
 }
 
 // NEW: Daily Deaths Chart
-export function DailyDeathsChart({ dailyDeaths, time }) {
+export function DailyDeathsChart({ dailyDeaths}) {
     if (!dailyDeaths || dailyDeaths.length === 0) return null
 
     const data = (dailyDeaths || []).map((deaths, i) => ({
@@ -1369,7 +1369,7 @@ export function DailyDeathsChart({ dailyDeaths, time }) {
 }
 
 // NEW: Hospitalization Chart
-export function HospitalizationChart({ dailyHospitalizations, time }) {
+export function HospitalizationChart({ dailyHospitalizations }) {
     if (!dailyHospitalizations || dailyHospitalizations.length === 0) return null
 
     const data = (dailyHospitalizations || []).map((hosp, i) => ({

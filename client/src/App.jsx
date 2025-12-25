@@ -30,7 +30,6 @@ import {
   AgeDistributionBarGreen,
   MobilityDistributionPie,
   SocialClusteringPie,
-  SEIRDynamicsChart,
   DailyNewInfectionsChart,
   StackedAreaChart,
   SeverityBreakdownChart,
@@ -49,13 +48,12 @@ import {
   PopulationStateTreemap,
   AgeInfectionScatter,
   DailyDeathsChart,
-  HospitalizationChart
+  HospitalizationChart,
   DegreeDistributionRadial
 } from './components/ComprehensiveCharts'
 import Network3D from './components/Network3D'
 
 function App() {
-  const [simulations, setSimulations] = useState([])
   const [currentSimulation, setCurrentSimulation] = useState(null)
   const [simulationStatus, setSimulationStatus] = useState(null)
   const [simulationResults, setSimulationResults] = useState(null)
@@ -93,7 +91,7 @@ function App() {
       setLoading(false)
       console.error('Simulation error details:', simulationStatus)
     }
-  }, [simulationStatus?.status])
+  }, [simulationStatus, currentSimulation])
 
   const fetchDiseases = async () => {
     try {
@@ -119,7 +117,8 @@ function App() {
     try {
       const response = await fetch('/api/simulations')
       const data = await response.json()
-      setSimulations(data.simulations)
+      // Store simulations data - can be used when listing is added to UI
+      console.log('Simulations:', data.simulations)
     } catch (err) {
       console.error('Failed to fetch simulations:', err)
     }
@@ -188,25 +187,26 @@ function App() {
     }
   }
 
-  const handleDeleteSimulation = async (simId) => {
-    try {
-      await fetch(`/api/simulation/${simId}`, {
-        method: 'DELETE',
-      })
-
-      // Clear if it's the current simulation
-      if (simId === currentSimulation) {
-        setCurrentSimulation(null)
-        setSimulationStatus(null)
-        setSimulationResults(null)
-      }
-
-      // Refresh list
-      fetchSimulations()
-    } catch (err) {
-      console.error('Failed to delete simulation:', err)
-    }
-  }
+  // Commenting out unused delete function - can be enabled when UI is added
+  // const _handleDeleteSimulation = async (simId) => {
+  //   try {
+  //     await fetch(`/api/simulation/${simId}`, {
+  //       method: 'DELETE',
+  //     })
+  //
+  //     // Clear if it's the current simulation
+  //     if (simId === currentSimulation) {
+  //       setCurrentSimulation(null)
+  //       setSimulationStatus(null)
+  //       setSimulationResults(null)
+  //     }
+  //
+  //     // Refresh list
+  //     fetchSimulations()
+  //   } catch (err) {
+  //     console.error('Failed to delete simulation:', err)
+  //   }
+  // }
 
   const handleRunExample = async () => {
     // Simplified example config
@@ -239,7 +239,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-950">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-slate-900 to-gray-950">
       {/* Modern Header */}
       <div className="bg-gray-800 shadow-2xl border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-8 py-6">
@@ -377,7 +377,7 @@ function App() {
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
                         <div
-                          className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-500"
+                          className="bg-linear-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-500"
                           style={{ width: `${simulationStatus.progress}%` }}
                         />
                       </div>
@@ -432,7 +432,7 @@ function App() {
               </div>
 
               {/* Detailed Statistics */}
-              <div className="mt-6 bg-gradient-to-r from-blue-900 to-purple-900 bg-opacity-40 p-6 rounded-lg">
+              <div className="mt-6 bg-linear-to-r from-blue-900 to-purple-900 bg-opacity-40 p-6 rounded-lg">
                 <h3 className="text-xl font-bold text-white mb-4">📈 Key Metrics</h3>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <MetricCard
@@ -722,7 +722,7 @@ function App() {
               </div>
 
               {/* Detailed Metrics */}
-              <div className="bg-gradient-to-r from-blue-900 to-purple-900 bg-opacity-40 p-6 rounded-lg mb-6">
+              <div className="bg-linear-to-r from-blue-900 to-purple-900 bg-opacity-40 p-6 rounded-lg mb-6">
                 <h3 className="text-xl font-semibold text-white mb-4">📋 Detailed Metrics</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <DetailMetric label="Initial Population" value={simulationResults.summary?.initial_population || 0} />
@@ -792,10 +792,10 @@ function TabButton({ active, onClick, icon, label, disabled = false }) {
       onClick={onClick}
       disabled={disabled}
       className={`relative px-6 py-4 font-bold transition-all duration-300 whitespace-nowrap transform ${active
-        ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl scale-105 rounded-t-lg'
+        ? 'bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl scale-105 rounded-t-lg'
         : disabled
           ? 'bg-gray-800 text-gray-300 cursor-not-allowed opacity-60'
-          : 'bg-transparent text-gray-300 hover:bg-gradient-to-r hover:from-gray-800 hover:to-gray-700 hover:shadow-md rounded-t-lg hover:scale-102'
+          : 'bg-transparent text-gray-300 hover:bg-linear-to-r hover:from-gray-800 hover:to-gray-700 hover:shadow-md rounded-t-lg hover:scale-102'
         }`}
     >
       <div className="flex items-center gap-2">
@@ -821,7 +821,7 @@ function MetricCard({ label, value, icon, color = 'blue' }) {
   }
 
   return (
-    <div className={`bg-gradient-to-br ${colorClasses[color] || colorClasses.blue} rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer`}>
+    <div className={`bg-linear-to-br ${colorClasses[color] || colorClasses.blue} rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer`}>
       <div className="flex items-start justify-between mb-3">
         <div className="text-white text-opacity-90 text-sm font-semibold uppercase tracking-wide">{label}</div>
         <span className="text-4xl opacity-80">{icon}</span>
@@ -915,13 +915,14 @@ function exportJSON(results) {
   URL.revokeObjectURL(url)
 }
 
-function exportImages(results) {
-  alert('Export Images: This feature captures all charts as images. Implementation requires html2canvas library.')
-}
-
-function exportAll(results) {
-  alert('Export All: This feature creates a ZIP file with all data, charts, and reports. Implementation requires JSZip library.')
-}
+// Export functions commented - can be implemented when needed
+// function exportImages(results) {
+//   alert('Export Images: This feature captures all charts as images. Implementation requires html2canvas library.')
+// }
+//
+// function exportAll(results) {
+//   alert('Export All: This feature creates a ZIP file with all data, charts, and reports. Implementation requires JSZip library.')
+// }
 
 export default App
 

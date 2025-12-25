@@ -5,9 +5,6 @@ export default function AnimationTab({ simulationResults }) {
     const [currentFrame, setCurrentFrame] = useState(0)
     const [isPlaying, setIsPlaying] = useState(false)
     const [playbackSpeed, setPlaybackSpeed] = useState(500)
-    const [exportFormat, setExportFormat] = useState('gif')
-    const [fps, setFps] = useState(10)
-    const [quality, setQuality] = useState('medium')
     const playIntervalRef = useRef(null)
 
     const maxFrames = simulationResults?.history?.time?.length || 0
@@ -269,7 +266,7 @@ export default function AnimationTab({ simulationResults }) {
     )
 }
 
-function StateCard({ label, value, color, icon }) {
+function StateCard({ label, value, icon }) {
     return (
         <div className="bg-gray-700 p-4 rounded-lg shadow border border-gray-600 text-center hover:shadow-lg transition-shadow">
             <div className="text-3xl mb-2">{icon}</div>
@@ -520,7 +517,7 @@ function Floating3DCard({ label, value, percent, icon, delay, isDeaths = false }
     )
 }
 
-function NetworkGlobeVisualization({ currentData, currentDay, isPlaying, simulationResults, currentFrame }) {
+function NetworkGlobeVisualization({ currentData, currentDay, isPlaying }) {
     const total = currentData.S + currentData.E + currentData.I + currentData.R + currentData.D
     const [rotation, setRotation] = useState(0)
 
@@ -537,6 +534,13 @@ function NetworkGlobeVisualization({ currentData, currentDay, isPlaying, simulat
     const generateGlobeNodes = (count = 40) => {
         const nodes = []
         const goldenAngle = Math.PI * (3 - Math.sqrt(5))
+        const stateDistribution = {
+            S: currentData.S / total,
+            E: currentData.E / total,
+            I: currentData.I / total,
+            R: currentData.R / total,
+            D: currentData.D / total
+        }
 
         for (let i = 0; i < count; i++) {
             const y = 1 - (i / (count - 1)) * 2
@@ -546,13 +550,13 @@ function NetworkGlobeVisualization({ currentData, currentDay, isPlaying, simulat
             const x = Math.cos(theta) * radius
             const z = Math.sin(theta) * radius
 
-            // Assign state based on current simulation data
+            // Assign state based on distribution
             let state = 'S'
-            const rand = Math.random() * total
-            if (rand < currentData.I) state = 'I'
-            else if (rand < currentData.I + currentData.E) state = 'E'
-            else if (rand < currentData.I + currentData.E + currentData.R) state = 'R'
-            else if (rand < currentData.I + currentData.E + currentData.R + currentData.D) state = 'D'
+            const randomVal = (i / count)  // Use deterministic calculation based on index
+            if (randomVal < stateDistribution.D) state = 'D'
+            else if (randomVal < stateDistribution.D + stateDistribution.R) state = 'R'
+            else if (randomVal < stateDistribution.D + stateDistribution.R + stateDistribution.I) state = 'I'
+            else if (randomVal < stateDistribution.D + stateDistribution.R + stateDistribution.I + stateDistribution.E) state = 'E'
 
             nodes.push({ x, y, z, state, id: i })
         }
@@ -644,7 +648,7 @@ function NetworkGlobeVisualization({ currentData, currentDay, isPlaying, simulat
                     ))}
 
                     {/* Network nodes on globe surface */}
-                    {nodes.map((node, idx) => {
+                    {nodes.map((node) => {
                         const scale = 140 // Globe radius
                         const x = node.x * scale
                         const y = node.y * scale

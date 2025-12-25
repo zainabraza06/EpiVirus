@@ -356,17 +356,36 @@ function generateNetworkFromSimulation(simulationData, population) {
         const y = radius * Math.sin(phi) * Math.sin(theta)
         const z = radius * Math.cos(phi)
 
-        // Estimate states based on population proportions
+        // Estimate states based on population proportions including Exposed and Deceased
         const states = []
+        const hist = simulationData.history
+        const initialPopulation = (hist.S?.[0] || 0) + (hist.E?.[0] || 0) + (hist.I?.[0] || 0) + (hist.R?.[0] || 0) + (hist.D?.[0] || 0) + (hist.V?.[0] || 0)
+
         for (let day = 0; day <= maxDay; day++) {
-            const totalPop = simulationData.history.S[0]
-            const iRatio = simulationData.history.I[day] / totalPop
-            const rRatio = simulationData.history.R[day] / totalPop
+            const s = hist.S?.[day] || 0
+            const e = hist.E?.[day] || 0
+            const iRatioVal = hist.I?.[day] || 0
+            const r = hist.R?.[day] || 0
+            const d = hist.D?.[day] || 0
+            const v = hist.V?.[day] || 0
+
+            const totalForDay = s + e + iRatioVal + r + d + v || initialPopulation || 1
+
+            const sRatio = s / totalForDay
+            const eRatio = e / totalForDay
+            const iRatio = iRatioVal / totalForDay
+            const rRatio = r / totalForDay
+            const dRatio = d / totalForDay
+            const vRatio = v / totalForDay
 
             const rand = Math.random()
             let state = 'S'
-            if (rand < iRatio) state = 'I'
-            else if (rand < iRatio + rRatio) state = 'R'
+            // map using descending severity so deaths/recovered are represented
+            if (rand < dRatio) state = 'D'
+            else if (rand < dRatio + rRatio) state = 'R'
+            else if (rand < dRatio + rRatio + iRatio) state = 'I'
+            else if (rand < dRatio + rRatio + iRatio + eRatio) state = 'E'
+            else if (rand < dRatio + rRatio + iRatio + eRatio + vRatio) state = 'V'
 
             states.push(state)
         }

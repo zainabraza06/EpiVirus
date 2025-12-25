@@ -130,30 +130,41 @@ export default function OverviewTab({
                                         <div className="text-green-400 text-2xl mb-1">😊</div>
                                         <div className="text-xs text-gray-400 mb-1">Final Susceptible</div>
                                         <div className="text-xl font-bold text-white">
-                                            {simulationHistory.history.S[simulationHistory.history.S.length - 1]}
+                                            {Math.round(simulationHistory.history.S[simulationHistory.history.S.length - 1] || 0)}
                                         </div>
                                     </div>
+
+                                    <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
+                                        <div className="text-yellow-400 text-2xl mb-1">🌥️</div>
+                                        <div className="text-xs text-gray-400 mb-1">Peak Exposed</div>
+                                        <div className="text-xl font-bold text-white">
+                                            {Math.round(Math.max(...(simulationHistory.history.E || [0])))}
+                                        </div>
+                                    </div>
+
                                     <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
                                         <div className="text-red-400 text-2xl mb-1">🦠</div>
                                         <div className="text-xs text-gray-400 mb-1">Peak Infected</div>
                                         <div className="text-xl font-bold text-white">
-                                            {Math.max(...simulationHistory.history.I)}
+                                            {Math.round(Math.max(...(simulationHistory.history.I || [0])))}
                                         </div>
                                     </div>
+
                                     <div className="bg-gray-700 p-4 rounded-xl text-center border border-gray-600">
                                         <div className="text-blue-400 text-2xl mb-1">💙</div>
                                         <div className="text-xs text-gray-400 mb-1">Total Recovered</div>
                                         <div className="text-xl font-bold text-white">
-                                            {simulationHistory.history.R[simulationHistory.history.R.length - 1]}
+                                            {Math.round(simulationHistory.history.R[simulationHistory.history.R.length - 1] || 0)}
                                         </div>
                                     </div>
+
                                     <div className={`bg-gray-700 p-4 rounded-xl text-center border-2 ${(simulationHistory.summary?.total_deaths ?? (simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0)) > 0 ? 'border-red-600' : 'border-green-600'}`}>
                                         <div className={`text-2xl mb-1 ${(simulationHistory.summary?.total_deaths ?? (simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0)) > 0 ? 'text-red-500' : 'text-green-500'}`}>
                                             {(simulationHistory.summary?.total_deaths ?? (simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0)) > 0 ? '💀' : '✓'}
                                         </div>
                                         <div className="text-xs text-gray-400 mb-1">Total Deaths</div>
                                         <div className={`text-xl font-bold ${(simulationHistory.summary?.total_deaths ?? (simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0)) > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                            {simulationHistory.summary?.total_deaths ?? (simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0)}
+                                            {Math.round(simulationHistory.summary?.total_deaths ?? (simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0))}
                                         </div>
                                         {(simulationHistory.summary?.total_deaths ?? (simulationHistory.history.D?.[simulationHistory.history.D.length - 1] || 0)) === 0 && (
                                             <div className="text-xs text-green-400 mt-1">Zero fatalities!</div>
@@ -356,7 +367,7 @@ function StatusCard({ label, status }) {
     const config = statusConfig[status] || statusConfig['not-configured']
 
     return (
-        <div className={`bg-gradient-to-br ${config.bg} p-6 rounded-2xl text-center border-2 ${config.border} shadow-lg ${config.shadow} hover:shadow-xl transform hover:scale-105 transition-all duration-300`}>
+        <div className={`bg-linear-to-br ${config.bg} p-6 rounded-2xl text-center border-2 ${config.border} shadow-lg ${config.shadow} hover:shadow-xl transform hover:scale-105 transition-all duration-300`}>
             <div className="text-4xl mb-3">{config.icon}</div>
             <div className="font-bold text-base text-white mb-1">{label}</div>
             <div className={`text-sm font-semibold ${config.text}`}>{config.label}</div>

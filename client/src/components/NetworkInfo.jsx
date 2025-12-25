@@ -1,7 +1,7 @@
 // components/NetworkInfo.jsx
 export default function NetworkInfo({ info }) {
     return (
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border-2 border-gray-700 shadow-xl">
+        <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border-2 border-gray-700 shadow-xl">
             <div className="flex items-center gap-2 mb-6">
                 <span className="text-2xl">🌐</span>
                 <h4 className="text-xl font-bold text-white">Network Information</h4>
