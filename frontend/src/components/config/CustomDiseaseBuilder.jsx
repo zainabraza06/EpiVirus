@@ -1,4 +1,4 @@
-﻿// components/CustomDiseaseBuilder.jsx
+// components/CustomDiseaseBuilder.jsx
 import { useState } from 'react'
 
 export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {} }) {
@@ -24,7 +24,7 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
         <div className="bg-gray-700 rounded-xl border border-gray-600 p-6 space-y-6">
             <div className="flex items-center gap-3 mb-4">
                 <div className="bg-gray-800 p-2 rounded-lg">
-                    <span className="text-2xl">ðŸ¦ </span>
+                    <span className="text-2xl">🦠</span>
                 </div>
                 <h3 className="text-xl font-bold text-white">
                     Custom Disease Parameters
@@ -36,13 +36,13 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
                 {/* Column 1: Transmission Parameters */}
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-600 space-y-4">
                     <h4 className="font-semibold text-red-300 border-b border-red-900 pb-2 flex items-center gap-2">
-                        <span>ðŸ¦ </span>
+                        <span>🦠</span>
                         <span>Transmission</span>
                     </h4>
 
                     <div>
                         <label className="block text-xs font-medium text-gray-300 mb-1 flex items-center justify-between">
-                            <span>Transmission Rate (Î²)</span>
+                            <span>Transmission Rate (β)</span>
                             <span className="text-sm text-red-400 font-semibold">{params.base_transmission_rate.toFixed(3)}</span>
                         </label>
                         <input
@@ -61,7 +61,7 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
 
                     <div>
                         <label className="block text-xs font-medium text-gray-300 mb-1 flex items-center justify-between">
-                            <span>Râ‚€</span>
+                            <span>R₀</span>
                             <span className="text-sm text-red-400 font-semibold">{params.r0.toFixed(2)}</span>
                         </label>
                         <input
@@ -101,7 +101,7 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
                 {/* Column 2: Disease Progression */}
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-600 space-y-4">
                     <h4 className="font-semibold text-yellow-300 border-b border-yellow-900 pb-2 flex items-center gap-2">
-                        <span>â±ï¸</span>
+                        <span>⏱️</span>
                         <span>Disease Timeline</span>
                     </h4>
 
@@ -146,8 +146,8 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
                     <div className="bg-gray-900 p-3 rounded border border-gray-700 mt-4">
                         <p className="text-xs text-gray-300 font-semibold mb-2">Timeline Summary:</p>
                         <div className="text-xs text-gray-400 space-y-1">
-                            <div>â€¢ Total disease duration: {(params.incubation_period + params.infectious_period).toFixed(1)} days</div>
-                            <div>â€¢ Generation time: ~{((params.incubation_period + params.infectious_period) / 2).toFixed(1)} days</div>
+                            <div>• Total disease duration: {(params.incubation_period + params.infectious_period).toFixed(1)} days</div>
+                            <div>• Generation time: ~{((params.incubation_period + params.infectious_period) / 2).toFixed(1)} days</div>
                         </div>
                     </div>
                 </div>
@@ -155,7 +155,7 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
                 {/* Column 3: Severity Parameters */}
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-600 space-y-4">
                     <h4 className="font-semibold text-orange-300 border-b border-orange-900 pb-2 flex items-center gap-2">
-                        <span>ðŸ¥</span>
+                        <span>🏥</span>
                         <span>Severity</span>
                     </h4>
 
@@ -221,7 +221,7 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
             {/* Age Stratification Info - Full Width */}
             <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
                 <h4 className="font-semibold text-purple-300 border-b border-purple-900 pb-2 mb-3 flex items-center gap-2">
-                    <span>ðŸ‘¥</span>
+                    <span>👥</span>
                     <span>Age Stratification</span>
                 </h4>
                 <p className="text-xs text-gray-300 mb-3">
@@ -245,10 +245,10 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
 
             {/* Summary - Full Width */}
             <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3 text-sm">ðŸ“‹ Disease Profile Summary</h4>
+                <h4 className="font-semibold text-white mb-3 text-sm">📋 Disease Profile Summary</h4>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div className="flex justify-between">
-                        <span className="text-gray-300">Râ‚€:</span>
+                        <span className="text-gray-300">R₀:</span>
                         <span className="font-semibold text-red-400">{params.r0.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
@@ -268,4 +268,3 @@ export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {
         </div>
     )
 }
-

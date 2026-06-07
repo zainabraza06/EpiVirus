@@ -1,4 +1,4 @@
-﻿// components/AdvancedNetworkConfig.jsx
+// components/AdvancedNetworkConfig.jsx
 import { useState } from 'react'
 
 export default function AdvancedNetworkConfig({ networkType, onParamsChange, initialParams = {} }) {
@@ -27,7 +27,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
                 <p className="text-xs text-gray-400 mt-2 italic">
-                    ðŸ“Š Probability that any two nodes are connected
+                    📊 Probability that any two nodes are connected
                 </p>
             </div>
         </div>
@@ -50,7 +50,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
                 />
                 <p className="text-xs text-gray-400 mt-2 italic">
-                    ðŸ”— Number of nearest neighbors in ring topology
+                    🔗 Number of nearest neighbors in ring topology
                 </p>
             </div>
 
@@ -158,7 +158,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
     const renderHybridMultilayer = () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">ðŸ  Household Layer</h4>
+                <h4 className="font-semibold text-white mb-3">🏠 Household Layer</h4>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -192,7 +192,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
             </div>
 
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">ðŸ¢ Workplace Layer</h4>
+                <h4 className="font-semibold text-white mb-3">🏢 Workplace Layer</h4>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -226,7 +226,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
             </div>
 
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">ðŸŽ“ School Layer</h4>
+                <h4 className="font-semibold text-white mb-3">🎓 School Layer</h4>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -260,7 +260,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
             </div>
 
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">ðŸŒ Community Layer</h4>
+                <h4 className="font-semibold text-white mb-3">🌐 Community Layer</h4>
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
                         Random Connection Probability: <span className="text-gray-200 font-semibold">{(params.community_p || 0.05).toFixed(3)}</span>
@@ -285,7 +285,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
     return (
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>âš™ï¸</span>
+                <span>⚙️</span>
                 <span>Advanced Network Parameters</span>
             </h3>
 
@@ -298,4 +298,3 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
         </div>
     )
 }
-
