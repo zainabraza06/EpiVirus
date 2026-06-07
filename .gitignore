@@ -57,7 +57,7 @@ dist-ssr/
 
 # Vite
 .vite/
-client/.vite/
+frontend/.vite/
 
 # Editor directories and files
 .vscode/*
