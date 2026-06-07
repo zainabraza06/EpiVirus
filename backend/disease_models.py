@@ -664,7 +664,7 @@ class InterventionSchedule:
             'no_intervention': [],
             'delayed_response': [
                 {'day': 30, 'type': 'mask_mandate', 'params': {'efficacy': 0.5, 'compliance': 0.7}},
-                {'day': 45, 'type': 'social_distancing', 'params': {'effectiveness': 0.3, 'compliance': 0.6}},
+                {'day': 45, 'type': 'social_distancing', 'params': {'reduction': 0.3, 'compliance': 0.6}},
                 {'day': 60, 'type': 'vaccination', 'params': {'rate': 0.02, 'efficacy': 0.9, 'priority': 'age'}},
                 {'day': 75, 'type': 'lockdown', 'params': {'strictness': 0.7, 'compliance': 0.8}},
                 {'day': 120, 'type': 'reopen', 'params': {'gradual': True}}
@@ -672,7 +672,7 @@ class InterventionSchedule:
             'rapid_response': [
                 {'day': 7, 'type': 'mask_mandate', 'params': {'efficacy': 0.6, 'compliance': 0.8}},
                 {'day': 14, 'type': 'testing', 'params': {'rate': 0.1, 'accuracy': 0.95, 'delay': 1}},
-                {'day': 21, 'type': 'social_distancing', 'params': {'effectiveness': 0.5, 'compliance': 0.7}},
+                {'day': 21, 'type': 'social_distancing', 'params': {'reduction': 0.5, 'compliance': 0.7}},
                 {'day': 30, 'type': 'vaccination', 'params': {'rate': 0.03, 'efficacy': 0.9, 'priority': 'frontline'}},
                 {'day': 45, 'type': 'travel_restrictions', 'params': {'reduction': 0.7}}
             ],
