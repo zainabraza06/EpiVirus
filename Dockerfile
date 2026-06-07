@@ -2,10 +2,10 @@
 
 # Stage 1: Build React Frontend
 FROM node:20-alpine AS frontend-builder
-WORKDIR /app/client
-COPY client/package*.json ./
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
 RUN npm ci
-COPY client/ ./
+COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Python Backend with Frontend Assets
@@ -19,14 +19,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend requirements and install
-COPY src/requirements.txt ./
+COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source code
-COPY src/ ./
+COPY backend/ ./
 
 # Copy built frontend from stage 1
-COPY --from=frontend-builder /app/client/dist ./static
+COPY --from=frontend-builder /app/frontend/dist ./static
 
 # Expose port
 EXPOSE 8000

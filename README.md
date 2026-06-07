@@ -107,7 +107,7 @@ EpiVirus models how infectious diseases spread through a population represented 
 
 ```
 EpiVirus/
-├── src/                         # Python backend
+├── backend/                     # Python backend
 │   ├── api_server.py            # FastAPI app, endpoints, background tasks
 │   ├── simulator_engine.py      # UltimateSimulator (SEIRD state machine)
 │   ├── disease_models.py        # DiseaseParameters, TransmissionCalculator,
@@ -116,19 +116,29 @@ EpiVirus/
 │   ├── animation_simulator.py   # Frame-by-frame animation data
 │   └── requirements.txt
 │
-├── client/                      # React frontend
+├── frontend/                    # React frontend
 │   ├── src/
 │   │   ├── App.jsx              # State hub, polling, result routing
 │   │   └── components/
-│   │       ├── SimulationConfig.jsx        # All input forms
-│   │       ├── SimulationResults.jsx       # Tab router for results
-│   │       ├── OverviewTab.jsx             # Summary stat cards
-│   │       ├── ComprehensiveCharts.jsx     # 30+ Recharts charts
-│   │       ├── Network3D.jsx               # Three.js 3D visualizer
-│   │       ├── AnimationTab.jsx            # Playback controls
-│   │       ├── CustomDiseaseBuilder.jsx    # Custom disease params
-│   │       ├── AdvancedNetworkConfig.jsx   # Advanced network settings
-│   │       └── AdvancedInterventionBuilder.jsx
+│   │       ├── ui/              # Layout primitives
+│   │       │   ├── Header.jsx
+│   │       │   └── LoadingSpinner.jsx
+│   │       ├── config/          # All simulation input forms
+│   │       │   ├── SimulationConfig.jsx
+│   │       │   ├── CustomDiseaseBuilder.jsx
+│   │       │   ├── AdvancedNetworkConfig.jsx
+│   │       │   └── AdvancedInterventionBuilder.jsx
+│   │       ├── charts/          # 2D data visualizations
+│   │       │   ├── ComprehensiveCharts.jsx
+│   │       │   ├── AdvancedCharts.jsx
+│   │       │   └── EpidemicChart.jsx
+│   │       ├── visualization/   # 3D and animation
+│   │       │   ├── Network3D.jsx
+│   │       │   └── AnimationTab.jsx
+│   │       └── results/         # Results display and summaries
+│   │           ├── SimulationResults.jsx
+│   │           ├── OverviewTab.jsx
+│   │           └── NetworkInfo.jsx
 │   ├── vite.config.js           # Dev proxy /api -> localhost:8000
 │   └── package.json
 │
@@ -396,7 +406,7 @@ Remove simulation from memory.
 ### Backend
 
 ```bash
-cd EpiVirus/src
+cd EpiVirus/backend
 pip install -r requirements.txt
 python api_server.py
 # API at http://localhost:8000
@@ -406,7 +416,7 @@ python api_server.py
 ### Frontend
 
 ```bash
-cd EpiVirus/client
+cd EpiVirus/frontend
 npm install
 npm run dev
 # Dev server at http://localhost:5173

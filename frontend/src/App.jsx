@@ -2,21 +2,23 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
-// Import components
-import Header from './components/Header'
-import SimulationConfig from './components/SimulationConfig'
-import SimulationResults from './components/SimulationResults'
-import NetworkInfo from './components/NetworkInfo'
-import EpidemicChart from './components/EpidemicChart'
-import LoadingSpinner from './components/LoadingSpinner'
-import OverviewTab from './components/OverviewTab'
-import AnimationTab from './components/AnimationTab'
+// UI
+import Header from './components/ui/Header'
+import LoadingSpinner from './components/ui/LoadingSpinner'
+// Config
+import SimulationConfig from './components/config/SimulationConfig'
+// Results
+import SimulationResults from './components/results/SimulationResults'
+import NetworkInfo from './components/results/NetworkInfo'
+import OverviewTab from './components/results/OverviewTab'
+// Charts
+import EpidemicChart from './components/charts/EpidemicChart'
 import {
   DiseaseDynamicsChart,
   DailyNewCasesChart,
   AgeDistributionChart,
   DegreeDistributionChart
-} from './components/AdvancedCharts'
+} from './components/charts/AdvancedCharts'
 import {
   DiseaseDynamicsStacked,
   EpidemicCurveChart,
@@ -50,8 +52,10 @@ import {
   DailyDeathsChart,
   HospitalizationChart,
   DegreeDistributionRadial
-} from './components/ComprehensiveCharts'
-import Network3D from './components/Network3D'
+} from './components/charts/ComprehensiveCharts'
+// Visualization
+import Network3D from './components/visualization/Network3D'
+import AnimationTab from './components/visualization/AnimationTab'
 
 function App() {
   const [currentSimulation, setCurrentSimulation] = useState(null)

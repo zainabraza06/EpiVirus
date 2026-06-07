@@ -6,7 +6,6 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import uvicorn
-import sys
 import json
 from datetime import datetime
 import asyncio
@@ -15,9 +14,6 @@ import networkx as nx
 import traceback
 import os
 from pathlib import Path
-
-# Add project modules to path
-sys.path.append('./src')
 
 from network_generator import UltimateNetworkGenerator
 from disease_models import DiseaseLibrary, DiseaseParameters
