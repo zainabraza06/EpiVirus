@@ -453,7 +453,6 @@ class DiseaseProgression:
     """Handles individual disease progression through states - FIXED VERSION"""
     
     @staticmethod
-    @staticmethod
     def determine_initial_course(age, disease, vaccination_status=False):
         """
         Determine disease course when someone gets infected

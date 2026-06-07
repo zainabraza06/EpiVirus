@@ -287,6 +287,11 @@ async def run_simulation(simulation_id: str, config: SimulationConfig):
         simulator.seed_infections(config.n_seed_infections, method=config.seed_method)
         
         # 5. Apply interventions
+        from disease_models import InterventionSchedule
+        schedule = InterventionSchedule()
+        schedule.create_preset_scenario(config.intervention_scenario)
+        simulator.scheduled_interventions = schedule.scheduled_interventions
+
         apply_interventions(
             simulator,
             config.intervention_scenario,
@@ -498,15 +503,15 @@ if STATIC_DIR.exists():
 # ==================== MAIN ====================
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
     print("🦠 Starting EpiVirus Pandemic Simulation API Server...")
-    print("📡 Server will be available at: http://localhost:8000")
-    print("📚 API Documentation: http://localhost:8000/docs")
-    print("🔄 WebSocket support: Coming soon")
-    
+    print(f"📡 Server will be available at: http://0.0.0.0:{port}")
+    print(f"📚 API Documentation: http://0.0.0.0:{port}/docs")
+
     uvicorn.run(
         "api_server:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
+        port=port,
+        reload=False,
         log_level="info"
     )

@@ -734,20 +734,10 @@ class UltimateSimulator:
         return self.history
     
     def _apply_scheduled_interventions(self):
-        """Apply interventions scheduled for specific days"""
-        # Example: Start vaccination on day 60
-        if self.time == 60 and not self.interventions.get('vaccination', False):
-            self.apply_intervention('vaccination', rate=0.02, efficacy=0.9, priority='age')
-        
-        # Example: Start lockdown on day 30 if cases > threshold
-        if (self.time == 30 and 
-            not self.interventions.get('lockdown', False) and
-            len(self.state_sets['I']) > 50):
-            self.apply_intervention('lockdown', strictness=0.7, compliance=0.8)
-        
-        # Example: Lift lockdown on day 90
-        if self.time == 90 and self.interventions.get('lockdown', False):
-            self.apply_intervention('reopen', gradual=True)
+        """Apply interventions from the user-defined schedule stored in scheduled_interventions."""
+        for entry in getattr(self, 'scheduled_interventions', []):
+            if entry['day'] == self.time:
+                self.apply_intervention(entry['type'], **entry.get('params', {}))
     
     def _record_history(self):
         """Record current state for analysis"""
