@@ -250,51 +250,45 @@ async def create_simulation(config: SimulationConfig, background_tasks: Backgrou
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start simulation: {str(e)}")
 
-async def run_simulation(simulation_id: str, config: SimulationConfig):
-    """Run simulation in background"""
+def run_simulation(simulation_id: str, config: SimulationConfig):
+    """Run simulation in a background thread (must be plain def, not async)."""
     try:
-        # Update status
         active_simulations[simulation_id]["status"] = "running"
-        
+
         # 1. Generate network
-        print(f"[{simulation_id}] Generating network...")
         G = generate_network(config.network)
-        
-        network_info = {
+        active_simulations[simulation_id]["network_info"] = {
             "nodes": G.number_of_nodes(),
             "edges": G.number_of_edges(),
             "avg_degree": sum(dict(G.degree()).values()) / G.number_of_nodes(),
-            "network_type": config.network.network_type
+            "network_type": config.network.network_type,
         }
-        active_simulations[simulation_id]["network_info"] = network_info
-        
+
         # 2. Configure disease
-        print(f"[{simulation_id}] Configuring disease...")
         disease = get_disease_params(config.disease)
-        
+
         # 3. Initialize simulator
-        print(f"[{simulation_id}] Initializing simulator...")
         simulator = UltimateSimulator(G, disease)
-        
+
         # 4. Seed infections
         simulator.seed_infections(config.n_seed_infections, method=config.seed_method)
-        
+
         # 5. Apply interventions
         from disease_models import InterventionSchedule
         schedule = InterventionSchedule()
         schedule.create_preset_scenario(config.intervention_scenario)
         simulator.scheduled_interventions = schedule.scheduled_interventions
+        apply_interventions(simulator, config.intervention_scenario,
+                            config.vaccination_rate, config.compliance_rate)
 
-        apply_interventions(
-            simulator,
-            config.intervention_scenario,
-            config.vaccination_rate,
-            config.compliance_rate
-        )
-        
-        # 6. Run simulation
-        print(f"[{simulation_id}] Running simulation for {config.simulation_days} days...")
-        history = simulator.run(days=config.simulation_days, show_progress=False)
+        # 6. Run simulation day-by-day so progress is visible to status endpoint
+        total = config.simulation_days
+        for day in range(total):
+            simulator.step(1)
+            active_simulations[simulation_id]["current_day"] = day + 1
+            active_simulations[simulation_id]["progress"] = round((day + 1) / total * 100, 1)
+
+        history = simulator.history
         
         # 7. Get results
         summary = simulator.get_summary_stats()
@@ -421,7 +415,8 @@ async def get_simulation_status(simulation_id: str):
         "current_day": sim["current_day"],
         "total_days": sim["total_days"],
         "progress": sim["progress"],
-        "network_info": sim.get("network_info")
+        "network_info": sim.get("network_info"),
+        "error": sim.get("error"),
     }
 
 @app.get("/api/simulation/{simulation_id}/results")

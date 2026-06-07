@@ -193,13 +193,6 @@ class UltimateSimulator:
             age, self.disease, vaccinated
         )
         
-        # DEBUG: Print progression data to see what's happening
-        print(f"DEBUG: Node {node} (age {age}) progression:")
-        print(f"  Symptoms: {progression['symptoms']}")
-        print(f"  Will die: {progression['will_die']}")
-        print(f"  Recovery day: {progression['recovery_day']}")
-        print(f"  Death day: {progression['death_day']}")
-        
         # Store progression data
         self.G.nodes[node]['symptoms'] = progression['symptoms']
         self.G.nodes[node]['incubation_days'] = progression['incubation_days']
@@ -213,9 +206,7 @@ class UltimateSimulator:
         if incubation_days and incubation_days > 0:
             self._schedule_event(node, 'become_infectious', incubation_days)
         else:
-            # Default if incubation_days is invalid
             self._schedule_event(node, 'become_infectious', 5)
-            print(f"⚠️  Warning: Invalid incubation days for node {node}, using default 5")
         
         # 2. Hospitalization if needed
         if progression.get('will_hospitalize', False) and progression.get('hospital_day'):
@@ -228,9 +219,8 @@ class UltimateSimulator:
             death_day = progression['death_day']
             if death_day and death_day > 0:
                 self._schedule_event(node, 'die', death_day)
-                print(f"💀 Scheduled death for node {node} on day {self.time + death_day}")
             else:
-                print(f"⚠️  Warning: Invalid death_day ({death_day}) for node {node}")
+                pass  # invalid death_day, skip silently
         
         # 4. Recovery - only schedule if not fatal and recovery_day exists
         if not progression.get('will_die', False) and progression.get('recovery_day'):
@@ -238,11 +228,7 @@ class UltimateSimulator:
             if recovery_day and recovery_day > 0:
                 self._schedule_event(node, 'recover', recovery_day)
             else:
-                print(f"⚠️  Warning: Invalid recovery_day ({recovery_day}) for node {node}")
-        elif progression.get('will_die', False):
-            print(f"ℹ️  Node {node} will die, skipping recovery scheduling")
-        else:
-            print(f"⚠️  Warning: No recovery day for node {node}")
+                pass  # invalid recovery_day, skip silently
         
         # Update infection tree for contact tracing
         if source != 'seed':
