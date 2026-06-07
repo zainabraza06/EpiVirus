@@ -1,6 +1,7 @@
 // src/App.jsx - Main EpiVirus Frontend Application
 import { useState, useEffect } from 'react'
 import './App.css'
+import { apiUrl } from './api'
 
 // UI
 import Header from './components/ui/Header'
@@ -99,7 +100,7 @@ function App() {
 
   const fetchDiseases = async () => {
     try {
-      const response = await fetch('/api/diseases')
+      const response = await fetch(apiUrl('/api/diseases'))
       const data = await response.json()
       setAvailableDiseases(data.diseases)
     } catch (err) {
@@ -109,7 +110,7 @@ function App() {
 
   const fetchNetworks = async () => {
     try {
-      const response = await fetch('/api/networks')
+      const response = await fetch(apiUrl('/api/networks'))
       const data = await response.json()
       setAvailableNetworks(data.networks)
     } catch (err) {
@@ -119,7 +120,7 @@ function App() {
 
   const fetchSimulations = async () => {
     try {
-      const response = await fetch('/api/simulations')
+      const response = await fetch(apiUrl('/api/simulations'))
       const data = await response.json()
       // Store simulations data - can be used when listing is added to UI
       console.log('Simulations:', data.simulations)
@@ -130,7 +131,7 @@ function App() {
 
   const fetchSimulationStatus = async (simId) => {
     try {
-      const response = await fetch(`/api/simulation/${simId}/status`)
+      const response = await fetch(apiUrl(`/api/simulation/${simId}/status`))
       const data = await response.json()
       setSimulationStatus(data)
     } catch (err) {
@@ -140,7 +141,7 @@ function App() {
 
   const fetchSimulationResults = async (simId) => {
     try {
-      const response = await fetch(`/api/simulation/${simId}/results`)
+      const response = await fetch(apiUrl(`/api/simulation/${simId}/results`))
       const data = await response.json()
       console.log('🔍 Simulation Results Data:', data)
       console.log('📊 Detailed Data:', data.detailed_data)
@@ -161,7 +162,7 @@ function App() {
     setSimulationResults(null)
 
     try {
-      const response = await fetch('/api/simulation', {
+      const response = await fetch(apiUrl('/api/simulation'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

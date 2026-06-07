@@ -4,7 +4,24 @@ import AdvancedNetworkConfig from './AdvancedNetworkConfig'
 import CustomDiseaseBuilder from './CustomDiseaseBuilder'
 import AdvancedInterventionBuilder from './AdvancedInterventionBuilder'
 
+const DEFAULT_DISEASES = [
+    { id: 'wildtype', name: 'COVID-19 (Wildtype)', r0: 2.5, mortality_rate: 0.02 },
+    { id: 'alpha',    name: 'COVID-19 (Alpha)',    r0: 4.0, mortality_rate: 0.025 },
+    { id: 'delta',    name: 'COVID-19 (Delta)',    r0: 5.0, mortality_rate: 0.03 },
+    { id: 'omicron',  name: 'COVID-19 (Omicron)', r0: 9.5, mortality_rate: 0.01 },
+]
+
+const DEFAULT_NETWORKS = [
+    { id: 'hybrid',           name: 'Hybrid Multilayer',  description: 'Realistic social network with households, workplaces, and schools' },
+    { id: 'erdos_renyi',      name: 'Erdős-Rényi',        description: 'Random network with uniform connection probability' },
+    { id: 'watts_strogatz',   name: 'Watts-Strogatz',     description: 'Small-world network with clustering and short paths' },
+    { id: 'barabasi_albert',  name: 'Barabási-Albert',    description: 'Scale-free network with power-law degree distribution' },
+    { id: 'stochastic_block', name: 'Stochastic Block',   description: 'Community-structured network' },
+]
+
 export default function SimulationConfig({ diseases, networks, onStartSimulation, loading, currentStatus }) {
+    const resolvedDiseases = (diseases && diseases.length > 0) ? diseases : DEFAULT_DISEASES
+    const resolvedNetworks = (networks && networks.length > 0) ? networks : DEFAULT_NETWORKS
     const [config, setConfig] = useState({
         network: {
             population: 1000,
@@ -108,12 +125,12 @@ export default function SimulationConfig({ diseases, networks, onStartSimulation
                                     onChange={(e) => handleNetworkChange('network_type', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
                                 >
-                                    {networks.map(net => (
+                                    {resolvedNetworks.map(net => (
                                         <option key={net.id} value={net.id}>{net.name}</option>
                                     ))}
                                 </select>
                                 <p className="text-xs text-gray-400 mt-1">
-                                    {networks.find(n => n.id === config.network.network_type)?.description}
+                                    {resolvedNetworks.find(n => n.id === config.network.network_type)?.description}
                                 </p>
                             </div>
                         </div>
@@ -133,14 +150,14 @@ export default function SimulationConfig({ diseases, networks, onStartSimulation
                                     onChange={(e) => handleDiseaseChange('variant', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-sm"
                                 >
-                                    {diseases.map(disease => (
+                                    {resolvedDiseases.map(disease => (
                                         <option key={disease.id} value={disease.id}>{disease.name}</option>
                                     ))}
                                 </select>
-                                {diseases.length > 0 && (
+                                {resolvedDiseases.length > 0 && (
                                     <div className="mt-2 p-2 bg-gray-800 rounded-lg text-xs text-gray-300 space-y-1">
                                         {(() => {
-                                            const selected = diseases.find(d => d.id === config.disease.variant)
+                                            const selected = resolvedDiseases.find(d => d.id === config.disease.variant)
                                             return selected ? (
                                                 <>
                                                     <div className="flex justify-between">
