@@ -1,4 +1,4 @@
-// components/AdvancedNetworkConfig.jsx
+﻿// components/AdvancedNetworkConfig.jsx
 import { useState } from 'react'
 
 export default function AdvancedNetworkConfig({ networkType, onParamsChange, initialParams = {} }) {
@@ -23,11 +23,11 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     max="0.1"
                     step="0.001"
                     value={params.erdos_p || 0.01}
-                    onChange={(e) => handleChange('erdos_p', parseFloat(e.target.value))}
+                    onChange={(e) => handleChange('erdos_p', (parseFloat(e.target.value) || 0))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
                 <p className="text-xs text-gray-400 mt-2 italic">
-                    📊 Probability that any two nodes are connected
+                    ðŸ“Š Probability that any two nodes are connected
                 </p>
             </div>
         </div>
@@ -46,11 +46,11 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     max="20"
                     step="1"
                     value={params.watts_k || 8}
-                    onChange={(e) => handleChange('watts_k', parseInt(e.target.value))}
+                    onChange={(e) => handleChange('watts_k', (parseInt(e.target.value) || 0))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
                 />
                 <p className="text-xs text-gray-400 mt-2 italic">
-                    🔗 Number of nearest neighbors in ring topology
+                    ðŸ”— Number of nearest neighbors in ring topology
                 </p>
             </div>
 
@@ -65,7 +65,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     max="1"
                     step="0.01"
                     value={params.watts_p || 0.3}
-                    onChange={(e) => handleChange('watts_p', parseFloat(e.target.value))}
+                    onChange={(e) => handleChange('watts_p', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-indigo-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -87,7 +87,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     max="10"
                     step="1"
                     value={params.barabasi_m || 3}
-                    onChange={(e) => handleChange('barabasi_m', parseInt(e.target.value))}
+                    onChange={(e) => handleChange('barabasi_m', (parseInt(e.target.value) || 0))}
                     className="w-full"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -109,7 +109,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     max="20"
                     step="1"
                     value={params.n_blocks || 5}
-                    onChange={(e) => handleChange('n_blocks', parseInt(e.target.value))}
+                    onChange={(e) => handleChange('n_blocks', (parseInt(e.target.value) || 0))}
                     className="w-full accent-indigo-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -127,7 +127,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     max="0.5"
                     step="0.01"
                     value={params.block_intra || 0.15}
-                    onChange={(e) => handleChange('block_intra', parseFloat(e.target.value))}
+                    onChange={(e) => handleChange('block_intra', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-indigo-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -145,7 +145,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                     max="0.1"
                     step="0.001"
                     value={params.block_inter || 0.01}
-                    onChange={(e) => handleChange('block_inter', parseFloat(e.target.value))}
+                    onChange={(e) => handleChange('block_inter', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-indigo-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -158,7 +158,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
     const renderHybridMultilayer = () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">🏠 Household Layer</h4>
+                <h4 className="font-semibold text-white mb-3">ðŸ  Household Layer</h4>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -170,7 +170,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                             max="8"
                             step="1"
                             value={params.household_size || 3}
-                            onChange={(e) => handleChange('household_size', parseInt(e.target.value))}
+                            onChange={(e) => handleChange('household_size', (parseInt(e.target.value) || 0))}
                             className="w-full accent-indigo-500"
                         />
                     </div>
@@ -184,7 +184,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                             max="1"
                             step="0.01"
                             value={params.household_p || 0.9}
-                            onChange={(e) => handleChange('household_p', parseFloat(e.target.value))}
+                            onChange={(e) => handleChange('household_p', (parseFloat(e.target.value) || 0))}
                             className="w-full accent-indigo-500"
                         />
                     </div>
@@ -192,7 +192,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
             </div>
 
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">🏢 Workplace Layer</h4>
+                <h4 className="font-semibold text-white mb-3">ðŸ¢ Workplace Layer</h4>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -204,7 +204,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                             max="100"
                             step="5"
                             value={params.workplace_size || 20}
-                            onChange={(e) => handleChange('workplace_size', parseInt(e.target.value))}
+                            onChange={(e) => handleChange('workplace_size', (parseInt(e.target.value) || 0))}
                             className="w-full accent-indigo-500"
                         />
                     </div>
@@ -218,7 +218,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                             max="0.8"
                             step="0.01"
                             value={params.workplace_p || 0.3}
-                            onChange={(e) => handleChange('workplace_p', parseFloat(e.target.value))}
+                            onChange={(e) => handleChange('workplace_p', (parseFloat(e.target.value) || 0))}
                             className="w-full accent-indigo-500"
                         />
                     </div>
@@ -226,7 +226,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
             </div>
 
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">🎓 School Layer</h4>
+                <h4 className="font-semibold text-white mb-3">ðŸŽ“ School Layer</h4>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -238,7 +238,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                             max="100"
                             step="5"
                             value={params.school_size || 30}
-                            onChange={(e) => handleChange('school_size', parseInt(e.target.value))}
+                            onChange={(e) => handleChange('school_size', (parseInt(e.target.value) || 0))}
                             className="w-full accent-indigo-500"
                         />
                     </div>
@@ -252,7 +252,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                             max="0.8"
                             step="0.01"
                             value={params.school_p || 0.4}
-                            onChange={(e) => handleChange('school_p', parseFloat(e.target.value))}
+                            onChange={(e) => handleChange('school_p', (parseFloat(e.target.value) || 0))}
                             className="w-full accent-indigo-500"
                         />
                     </div>
@@ -260,7 +260,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
             </div>
 
             <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                <h4 className="font-semibold text-white mb-3">🌐 Community Layer</h4>
+                <h4 className="font-semibold text-white mb-3">ðŸŒ Community Layer</h4>
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
                         Random Connection Probability: <span className="text-gray-200 font-semibold">{(params.community_p || 0.05).toFixed(3)}</span>
@@ -271,7 +271,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
                         max="0.2"
                         step="0.001"
                         value={params.community_p || 0.05}
-                        onChange={(e) => handleChange('community_p', parseFloat(e.target.value))}
+                        onChange={(e) => handleChange('community_p', (parseFloat(e.target.value) || 0))}
                         className="w-full accent-indigo-500"
                     />
                     <p className="text-xs text-gray-400 mt-1">
@@ -285,7 +285,7 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
     return (
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>⚙️</span>
+                <span>âš™ï¸</span>
                 <span>Advanced Network Parameters</span>
             </h3>
 
@@ -298,3 +298,4 @@ export default function AdvancedNetworkConfig({ networkType, onParamsChange, ini
         </div>
     )
 }
+

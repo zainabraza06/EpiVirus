@@ -1,4 +1,4 @@
-// components/AdvancedInterventionBuilder.jsx
+﻿// components/AdvancedInterventionBuilder.jsx
 import { useState } from 'react'
 
 export default function AdvancedInterventionBuilder({ onInterventionsChange, initialInterventions = [] }) {
@@ -10,13 +10,13 @@ export default function AdvancedInterventionBuilder({ onInterventionsChange, ini
     })
 
     const interventionTypes = {
-        mask_mandate: { label: 'Mask Mandate', icon: '😷', color: 'blue' },
-        social_distancing: { label: 'Social Distancing', icon: '↔️', color: 'green' },
-        vaccination: { label: 'Vaccination Campaign', icon: '💉', color: 'purple' },
-        lockdown: { label: 'Lockdown', icon: '🔒', color: 'red' },
-        testing: { label: 'Testing Program', icon: '🧪', color: 'yellow' },
-        school_closure: { label: 'School Closure', icon: '🏫', color: 'orange' },
-        border_control: { label: 'Border Control', icon: '🛂', color: 'indigo' }
+        mask_mandate: { label: 'Mask Mandate', icon: 'ðŸ˜·', color: 'blue' },
+        social_distancing: { label: 'Social Distancing', icon: 'â†”ï¸', color: 'green' },
+        vaccination: { label: 'Vaccination Campaign', icon: 'ðŸ’‰', color: 'purple' },
+        lockdown: { label: 'Lockdown', icon: 'ðŸ”’', color: 'red' },
+        testing: { label: 'Testing Program', icon: 'ðŸ§ª', color: 'yellow' },
+        school_closure: { label: 'School Closure', icon: 'ðŸ«', color: 'orange' },
+        border_control: { label: 'Border Control', icon: 'ðŸ›‚', color: 'indigo' }
     }
 
     const addIntervention = () => {
@@ -45,7 +45,7 @@ export default function AdvancedInterventionBuilder({ onInterventionsChange, ini
         <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
                 <div className="bg-gray-700 p-3 rounded-xl shadow-lg">
-                    <span className="text-2xl">🛡️</span>
+                    <span className="text-2xl">ðŸ›¡ï¸</span>
                 </div>
                 <h3 className="text-2xl font-bold text-white">
                     Advanced Intervention Builder
@@ -55,14 +55,14 @@ export default function AdvancedInterventionBuilder({ onInterventionsChange, ini
             {/* Add New Intervention */}
             <div className="bg-gray-700 p-6 rounded-2xl border-2 border-gray-600 shadow-xl mb-6">
                 <div className="flex items-center gap-2 mb-6">
-                    <span className="text-2xl">➕</span>
+                    <span className="text-2xl">âž•</span>
                     <h4 className="text-xl font-bold text-white">Add Intervention</h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
                         <label className="block text-sm font-bold text-gray-200 mb-3 flex items-center justify-between">
-                            <span>📅 Start Day</span>
+                            <span>ðŸ“… Start Day</span>
                             <span className="text-lg text-orange-600">{newIntervention.day}</span>
                         </label>
                         <input
@@ -70,14 +70,14 @@ export default function AdvancedInterventionBuilder({ onInterventionsChange, ini
                             min="1"
                             max="365"
                             value={newIntervention.day}
-                            onChange={(e) => setNewIntervention({ ...newIntervention, day: parseInt(e.target.value) })}
+                            onChange={(e) => setNewIntervention({ ...newIntervention, day: (parseInt(e.target.value) || 0) })}
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
                         />
                     </div>
 
                     <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
                         <label className="block text-sm font-bold text-gray-200 mb-3">
-                            🎯 Intervention Type
+                            ðŸŽ¯ Intervention Type
                         </label>
                         <select
                             value={newIntervention.type}
@@ -101,7 +101,7 @@ export default function AdvancedInterventionBuilder({ onInterventionsChange, ini
                             onClick={addIntervention}
                             className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
                         >
-                            ➕ Add
+                            âž• Add
                         </button>
                     </div>
                 </div>
@@ -123,7 +123,7 @@ export default function AdvancedInterventionBuilder({ onInterventionsChange, ini
 
             {/* Current Interventions */}
             <div>
-                <h4 className="font-semibold text-white mb-4">📅 Scheduled Interventions</h4>
+                <h4 className="font-semibold text-white mb-4">ðŸ“… Scheduled Interventions</h4>
 
                 {interventions.length === 0 ? (
                     <div className="bg-gray-800 p-6 rounded-lg text-center text-gray-400">
@@ -149,7 +149,7 @@ export default function AdvancedInterventionBuilder({ onInterventionsChange, ini
             {/* Timeline Visualization */}
             {interventions.length > 0 && (
                 <div className="mt-6 bg-gray-700 p-4 rounded-lg border border-gray-600">
-                    <h4 className="font-semibold text-white mb-3">📆 Intervention Timeline</h4>
+                    <h4 className="font-semibold text-white mb-3">ðŸ“† Intervention Timeline</h4>
                     <div className="relative h-16 bg-gray-700 rounded">
                         {interventions.map(intervention => {
                             const position = (intervention.day / 365) * 100
@@ -193,13 +193,13 @@ function InterventionCard({ intervention, interventionTypes, onRemove, onParamCh
                         onClick={() => setExpanded(!expanded)}
                         className="px-3 py-1 text-sm bg-gray-600 text-gray-200 rounded hover:bg-gray-500"
                     >
-                        {expanded ? '▲' : '▼'}
+                        {expanded ? 'â–²' : 'â–¼'}
                     </button>
                     <button
                         onClick={onRemove}
                         className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
                     >
-                        ✕
+                        âœ•
                     </button>
                 </div>
             </div>
@@ -230,7 +230,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="1"
                     step="0.01"
                     value={params.efficacy || 0.5}
-                    onChange={(e) => onChange('efficacy', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('efficacy', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-blue-500"
                 />
             </div>
@@ -244,7 +244,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="1"
                     step="0.01"
                     value={params.compliance || 0.7}
-                    onChange={(e) => onChange('compliance', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('compliance', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-blue-500"
                 />
             </div>
@@ -263,7 +263,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="0.8"
                     step="0.01"
                     value={params.reduction || 0.4}
-                    onChange={(e) => onChange('reduction', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('reduction', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-green-500"
                 />
             </div>
@@ -277,7 +277,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="1"
                     step="0.01"
                     value={params.compliance || 0.6}
-                    onChange={(e) => onChange('compliance', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('compliance', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-green-500"
                 />
             </div>
@@ -296,7 +296,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="0.05"
                     step="0.001"
                     value={params.rate || 0.01}
-                    onChange={(e) => onChange('rate', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('rate', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-purple-500"
                 />
             </div>
@@ -310,7 +310,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="1"
                     step="0.01"
                     value={params.efficacy || 0.85}
-                    onChange={(e) => onChange('efficacy', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('efficacy', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-purple-500"
                 />
             </div>
@@ -344,7 +344,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="1"
                     step="0.01"
                     value={params.strictness || 0.7}
-                    onChange={(e) => onChange('strictness', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('strictness', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-red-500"
                 />
             </div>
@@ -358,7 +358,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="90"
                     step="1"
                     value={params.duration || 14}
-                    onChange={(e) => onChange('duration', parseInt(e.target.value))}
+                    onChange={(e) => onChange('duration', (parseInt(e.target.value) || 0))}
                     className="w-full accent-red-500"
                 />
             </div>
@@ -377,7 +377,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="0.2"
                     step="0.001"
                     value={params.rate || 0.05}
-                    onChange={(e) => onChange('rate', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('rate', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-yellow-500"
                 />
             </div>
@@ -391,7 +391,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="1"
                     step="0.01"
                     value={params.accuracy || 0.95}
-                    onChange={(e) => onChange('accuracy', parseFloat(e.target.value))}
+                    onChange={(e) => onChange('accuracy', (parseFloat(e.target.value) || 0))}
                     className="w-full accent-yellow-500"
                 />
             </div>
@@ -405,7 +405,7 @@ function InterventionParams({ type, params, onChange, compact = false }) {
                     max="5"
                     step="1"
                     value={params.delay || 1}
-                    onChange={(e) => onChange('delay', parseInt(e.target.value))}
+                    onChange={(e) => onChange('delay', (parseInt(e.target.value) || 0))}
                     className="w-full accent-yellow-500"
                 />
             </div>
@@ -444,3 +444,4 @@ function getDefaultParams(type) {
     }
     return defaults[type] || {}
 }
+

@@ -111,7 +111,7 @@ export default function SimulationConfig({ diseases, networks, onStartSimulation
                                 <input
                                     type="number"
                                     value={config.network.population}
-                                    onChange={(e) => handleNetworkChange('population', parseInt(e.target.value))}
+                                    onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v)) handleNetworkChange('population', v) }}
                                     className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
                                     min="100"
                                     max="10000"
@@ -191,7 +191,7 @@ export default function SimulationConfig({ diseases, networks, onStartSimulation
                                 <input
                                     type="range"
                                     value={config.n_seed_infections}
-                                    onChange={(e) => handleConfigChange('n_seed_infections', parseInt(e.target.value))}
+                                    onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v)) handleConfigChange('n_seed_infections', v) }}
                                     className="w-full accent-yellow-500"
                                     min="1"
                                     max="100"
@@ -229,7 +229,7 @@ export default function SimulationConfig({ diseases, networks, onStartSimulation
                             <input
                                 type="range"
                                 value={config.simulation_days}
-                                onChange={(e) => handleConfigChange('simulation_days', parseInt(e.target.value))}
+                                onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v)) handleConfigChange('simulation_days', v) }}
                                 className="w-full accent-purple-500"
                                 min="30"
                                 max="365"
@@ -265,7 +265,7 @@ export default function SimulationConfig({ diseases, networks, onStartSimulation
                                     <input
                                         type="range"
                                         value={config.vaccination_rate}
-                                        onChange={(e) => handleConfigChange('vaccination_rate', parseFloat(e.target.value))}
+                                        onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) handleConfigChange('vaccination_rate', v) }}
                                         className="w-full accent-green-500"
                                         min="0"
                                         max="0.05"
