@@ -14,7 +14,9 @@ A full-stack, network-based epidemic simulation platform implementing the **SEIR
 6. [API Reference](#api-reference)
 7. [Local Development](#local-development)
 8. [Docker](#docker)
+9. [Render Deployment](#render-deployment)
 10. [Configuration Reference](#configuration-reference)
+11. [Simulation Correctness Notes](#simulation-correctness-notes)
 
 ---
 
@@ -26,11 +28,11 @@ EpiVirus models how infectious diseases spread through a population represented 
 
 - SEIRD model with 5 infectious severity levels (asymptomatic through critical)
 - 9-age-group stratification with realistic COVID-19 parameters
-- 5 network topologies (hybrid multilayer, Erdos-Renyi, Watts-Strogatz, Barabasi-Albert, Stochastic Block)
-- 9 intervention types with preset scenarios (no intervention, rapid response, delayed response, herd immunity)
+- 5 network topologies (hybrid multilayer, Erdős-Rényi, Watts-Strogatz, Barabási-Albert, Stochastic Block)
+- 5 intervention scenarios with 9 intervention types and a custom intervention builder
 - 3D network visualization (Three.js / WebGL) with per-node color coding and animation playback
 - 30+ interactive charts (Recharts) covering SEIRD dynamics, healthcare burden, age distribution, R-effective trajectory
-- REST API (FastAPI) with background simulation execution and polling
+- REST API (FastAPI) with background simulation execution and live progress polling
 
 ---
 
@@ -54,27 +56,27 @@ EpiVirus models how infectious diseases spread through a population represented 
                          |  HTTP / JSON
                          v
 +------------------------------------------------------------------+
-|                   FASTAPI BACKEND  (:8000)                       |
+|                   FASTAPI BACKEND  (:8000 / $PORT)               |
 |                                                                  |
 |  POST /api/simulation                                            |
 |    |  +------------------------------------------+             |
-|    |  |          BackgroundTask                  |             |
-|    |  |  1. UltimateNetworkGenerator             |             |
-|    |  |     -> generates NetworkX graph G        |             |
-|    |  |  2. DiseaseLibrary.covid19_variant()     |             |
-|    |  |     -> DiseaseParameters object          |             |
-|    |  |  3. UltimateSimulator(G, disease)        |             |
-|    |  |     -> seed_infections()                 |             |
-|    |  |     -> attach InterventionSchedule       |             |
-|    |  |     -> run(days=N)                       |             |
-|    |  |  4. get_summary_stats()                  |             |
-|    |  |  5. serialize -> active_simulations      |             |
+|    |  |   BackgroundTask (thread pool, not async) |             |
+|    |  |  1. UltimateNetworkGenerator              |             |
+|    |  |     -> generates NetworkX graph G         |             |
+|    |  |  2. DiseaseLibrary.covid19_variant()      |             |
+|    |  |     -> DiseaseParameters object           |             |
+|    |  |  3. UltimateSimulator(G, disease)         |             |
+|    |  |     -> seed_infections()                  |             |
+|    |  |     -> attach InterventionSchedule        |             |
+|    |  |     -> step(1) x N days (with progress)   |             |
+|    |  |  4. get_summary_stats()                   |             |
+|    |  |  5. serialize -> active_simulations       |             |
 |    |  +------------------------------------------+             |
 |    |                                                             |
 |    v                                                             |
 |  returns simulation_id                                           |
 |                                                                  |
-|  GET /api/simulation/{id}/status -> progress %                   |
+|  GET /api/simulation/{id}/status -> progress % + error          |
 |  GET /api/simulation/{id}/results -> full JSON payload           |
 +------------------------------------------------------------------+
                          |
@@ -82,7 +84,7 @@ EpiVirus models how infectious diseases spread through a population represented 
 +------------------------------------------------------------------+
 |                  SIMULATION ENGINE  (Python)                     |
 |                                                                  |
-|  UltimateSimulator.run(days)                                     |
+|  UltimateSimulator.step(1) called per day                        |
 |  +-----------------------------------------------------------+  |
 |  |  for each day:                                            |  |
 |  |    1. _process_events()   <- fire scheduled state changes |  |
@@ -119,6 +121,7 @@ EpiVirus/
 ├── frontend/                    # React frontend
 │   ├── src/
 │   │   ├── App.jsx              # State hub, polling, result routing
+│   │   ├── api.js               # apiUrl() helper — respects VITE_API_URL
 │   │   └── components/
 │   │       ├── ui/              # Layout primitives
 │   │       │   ├── Header.jsx
@@ -139,10 +142,12 @@ EpiVirus/
 │   │           ├── SimulationResults.jsx
 │   │           ├── OverviewTab.jsx
 │   │           └── NetworkInfo.jsx
+│   ├── .env.local               # VITE_API_URL (blank = same-domain Render)
 │   ├── vite.config.js           # Dev proxy /api -> localhost:8000
 │   └── package.json
 │
 ├── Dockerfile                   # Multi-stage (Node build + Python runtime)
+├── render.yaml                  # Render service definition
 └── README.md
 ```
 
@@ -152,16 +157,16 @@ EpiVirus/
 
 | Layer | Technology | Version | Role |
 |-------|-----------|---------|------|
-| Frontend framework | React | 19.2 | SPA, state, UI |
+| Frontend framework | React | 19.x | SPA, state, UI |
 | Build tool | Vite | 7.x | Bundling, dev proxy |
 | Styling | Tailwind CSS | 4.x | Utility classes |
 | 2D charts | Recharts | 3.6 | 30+ chart types |
-| 3D visualization | Three.js + @react-three/fiber | 0.182 / 9.4 | WebGL network render |
-| API framework | FastAPI | 0.115 | REST API, async |
+| 3D visualization | Three.js + @react-three/fiber | latest | WebGL network render |
+| API framework | FastAPI | 0.115 | REST API |
 | ASGI server | Uvicorn | 0.32 | HTTP server |
 | Validation | Pydantic v2 | 2.10 | Request/response models |
-| Graph library | NetworkX | 3.1 | Network generation and analysis |
-| Numerics | NumPy / SciPy | 1.24 / 1.11 | Distributions, array ops |
+| Graph library | NetworkX | 3.x | Network generation and analysis |
+| Numerics | NumPy / SciPy | latest | Distributions, array ops |
 | Containerization | Docker | multi-stage | Build and runtime |
 
 ---
@@ -222,7 +227,7 @@ P = base x age x mobility x contact_type x interventions
 | age | susceptibility from age_stratification table |
 | mobility | mean of infector + susceptible mobility scores (0-1) |
 | contact_type | household 2.0, school 1.5, workplace 1.2, hub 1.8, random 0.8; multiplied by edge weight |
-| interventions | lockdown isolation: x0.1; social distancing: x(1 - eff x compliance) |
+| interventions | lockdown isolation: x0.1; social distancing: x(1 - reduction x compliance) |
 | masks | both masked: (1-eff)^2; one masked: 1 - 0.3eff; no masks: 1.0 |
 | immunity | 1 - current_immunity (wanes after waning_start days) |
 | seasonality | 1 + amplitude x cos(2pi(day - peak)/365) |
@@ -260,21 +265,35 @@ All four variants have severity probabilities that sum to exactly 1.0, validated
 
 | Type | Algorithm | Best For |
 |------|-----------|----------|
-| Hybrid Multilayer | Watts-Strogatz base + household/workplace/school/random layers | Most realistic social structure |
-| Erdos-Renyi | G(N,p) uniform random | Baseline with no structure |
+| Hybrid Multilayer | Household + workplace + school + community layers | Most realistic social structure |
+| Erdős-Rényi | G(N,p) uniform random | Baseline with no structure |
 | Watts-Strogatz | Ring lattice + rewiring | Small-world (high clustering, short paths) |
-| Barabasi-Albert | Preferential attachment | Scale-free with super-spreader hubs |
+| Barabási-Albert | Preferential attachment | Scale-free with super-spreader hubs |
 | Stochastic Block | Community probability matrix | Distinct communities / schools |
 
-### Intervention Scenarios
+### Intervention Types
+
+| Type | Key Parameters |
+|------|---------------|
+| mask_mandate | efficacy, compliance |
+| social_distancing | reduction, compliance |
+| vaccination | rate, efficacy, priority (elderly/vulnerable/random/frontline) |
+| lockdown | strictness, compliance, duration |
+| testing | rate, accuracy, delay |
+| school_closure | reduction, compliance |
+| border_control | reduction, compliance |
+| travel_restrictions | reduction |
+| reopen | gradual |
+
+### Preset Intervention Scenarios
 
 | Scenario | Timeline |
 |----------|---------|
 | no_intervention | No interventions; natural epidemic spread |
 | rapid_response | Masks day 7, testing day 14, distancing day 21, vaccination day 30, travel restrictions day 45 |
 | delayed_response | Masks day 30, distancing day 45, vaccination day 60, lockdown day 75, reopen day 120 |
-| herd_immunity | Mass vaccination from day 0 (5%/day tapering to 2%) |
-| full_lockdown | Strict lockdown + masks + travel restrictions from day 14, reopen day 45 |
+| herd_immunity | Mass vaccination from day 0 (5%/day), day 30 (3%/day), day 60 (2%/day) |
+| full_lockdown | Lockdown + masks + travel restrictions from day 14, reopen day 45, vaccination day 50 |
 
 ---
 
@@ -286,19 +305,22 @@ User submits config form
         v
 POST /api/simulation  -> returns { simulation_id }
         |
-        v (background task)
+        v (plain def — runs in FastAPI thread pool, not event loop)
   generate_network()        -> NetworkX graph G
   get_disease_params()      -> DiseaseParameters
   UltimateSimulator(G, dp)
     .seed_infections(n, method)
     .scheduled_interventions = InterventionSchedule(scenario)
-    .run(days=N)
+    for day in range(total_days):
+      .step(1)                        <- one day of simulation
+      active_simulations[id].current_day = day + 1
+      active_simulations[id].progress  = (day+1)/total * 100
       |
-      | for each day 0..N:
+      | each step:
       |   _process_events()              <- become_infectious, die, recover
       |   _apply_scheduled_interventions <- fires scenario events on correct day
       |   _transmission_step()          <- P(trans) for each I-S neighbor pair
-      |   DiseaseProgression.update_immunity()
+      |   immunity waning update
       |   _record_history()             <- S,E,I,R,D,V,Ia,Im,Is,Ih,Ic,...
       |   _update_statistics()          <- peak, R_eff, hospital_bed_usage
       |
@@ -309,7 +331,8 @@ POST /api/simulation  -> returns { simulation_id }
 
 Frontend polls GET /api/simulation/{id}/status (every 2s)
         |
-        +-- status "running"  -> spinner + progress bar
+        +-- status "running"   -> progress bar updates live
+        +-- status "failed"    -> error message shown
         +-- status "completed"
               |
               v
@@ -343,7 +366,7 @@ Returns available COVID-19 variants with R0 and mortality.
 Returns available network topology definitions.
 
 #### `POST /api/simulation`
-Start a new simulation. Returns immediately; simulation runs in a background task.
+Start a new simulation. Returns immediately; simulation runs in a background thread.
 
 Request body:
 ```json
@@ -370,16 +393,20 @@ Response:
 ```
 
 #### `GET /api/simulation/{id}/status`
-Poll for progress (frontend polls every 2 seconds).
+Poll for live progress (frontend polls every 2 seconds).
 
 ```json
 {
   "status": "running",
   "current_day": 45,
   "total_days": 120,
-  "progress": 37.5
+  "progress": 37.5,
+  "error": null
 }
 ```
+
+`status` values: `initializing` → `running` → `completed` | `failed`  
+`error` is `null` on success, a string message on failure.
 
 #### `GET /api/simulation/{id}/results`
 Fetch full results once `status == "completed"`.
@@ -423,6 +450,8 @@ npm run dev
 # Vite automatically proxies /api/* to http://localhost:8000
 ```
 
+The `VITE_API_URL` variable in `frontend/.env.local` controls where the frontend sends API requests. Leave it blank when both services are on the same domain (Render), or set it to the backend URL for split deployments.
+
 ---
 
 ## Docker
@@ -438,13 +467,13 @@ The multi-stage Dockerfile:
 
 ```
 Stage 1: node:20-alpine
-  COPY client/ && npm ci && npm run build
-  Output: /app/client/dist
+  COPY frontend/ && npm ci && npm run build
+  Output: /app/frontend/dist
 
 Stage 2: python:3.11-slim
   pip install -r requirements.txt
-  COPY src/ -> /app/
-  COPY dist/ -> /app/static/    (served by FastAPI catch-all)
+  COPY backend/ -> /app/
+  COPY dist/    -> /app/static/    (served by FastAPI catch-all)
   CMD ["python", "api_server.py"]
 ```
 
@@ -457,7 +486,37 @@ docker run -p 8000:8000 epivirus
 
 ---
 
+## Render Deployment
 
+EpiVirus deploys as a single Docker-based web service on Render — the Python backend serves both the API and the pre-built React frontend from the `/app/static/` directory.
+
+### Steps
+
+1. Push your code to GitHub.
+
+2. In the Render dashboard, create a **New Web Service** and connect your GitHub repo.
+
+3. Configure the service:
+
+   | Setting | Value |
+   |---------|-------|
+   | Runtime | Docker |
+   | Dockerfile Path | `./Dockerfile` |
+   | Root Directory | _(leave blank)_ |
+   | Health Check Path | `/api` |
+
+4. Add environment variables:
+
+   | Key | Value |
+   |-----|-------|
+   | `PORT` | `10000` |
+   | `PYTHONUNBUFFERED` | `1` |
+
+5. Deploy. Render builds the Docker image (installs Python deps + builds React), then starts the container. The app is available at `https://<your-service>.onrender.com`.
+
+### Alternatively, use `render.yaml`
+
+A `render.yaml` file is included at the repo root. If you connect the repo to Render with Blueprint support, it will auto-configure the service with the settings above.
 
 ### Performance Sizing
 
@@ -468,7 +527,7 @@ docker run -p 8000:8000 epivirus
 | up to 5000 | 180 | 2 GB | Standard ($25/mo) |
 | 10000 | 365 | 4 GB | Standard+ |
 
-> The free tier spins down after 15 minutes of inactivity. The first request after spin-down takes 30-60 seconds while the container restarts. Use a paid plan for always-on availability.
+> The free tier spins down after 15 minutes of inactivity. The first request after spin-down takes 30–60 seconds while the container restarts.
 
 ---
 
@@ -479,11 +538,14 @@ docker run -p 8000:8000 epivirus
 | Parameter | Default | Range | Description |
 |-----------|---------|-------|-------------|
 | population | 1000 | 100-10000 | Number of nodes (people) |
-| network_type | hybrid | see below | Contact network topology |
-| erdos_p | 0.01 | 0.001-0.1 | Edge probability (Erdos-Renyi only) |
+| network_type | hybrid | hybrid, erdos_renyi, watts_strogatz, barabasi_albert, stochastic_block | Contact network topology |
+| erdos_p | 0.01 | 0.001-0.1 | Edge probability (Erdős-Rényi only) |
 | watts_k | 8 | 2-20 | Neighbors in ring (Watts-Strogatz only) |
 | watts_p | 0.3 | 0-1 | Rewiring probability (Watts-Strogatz only) |
-| barabasi_m | 3 | 1-10 | Edges per new node (Barabasi-Albert only) |
+| barabasi_m | 3 | 1-10 | Edges per new node (Barabási-Albert only) |
+| n_blocks | 5 | 2-20 | Number of communities (Stochastic Block only) |
+| block_intra | 0.15 | 0.01-0.5 | Within-block connection probability |
+| block_inter | 0.01 | 0.001-0.1 | Between-block connection probability |
 
 ### Simulation Parameters
 
@@ -494,6 +556,7 @@ docker run -p 8000:8000 epivirus
 | simulation_days | 120 | Total days to simulate |
 | vaccination_rate | 0.0 | Daily fraction of susceptibles vaccinated (0-0.05) |
 | compliance_rate | 0.8 | Fraction of population complying with interventions |
+| intervention_scenario | no_intervention | no_intervention, rapid_response, delayed_response, herd_immunity, full_lockdown |
 
 ---
 
@@ -506,6 +569,8 @@ The following correctness properties have been verified in the code:
 - **State set integrity**: Nodes are discarded from old state sets before being added to new ones
 - **Daily deaths tracking**: Computed as `total_deaths - previous_total_deaths` (delta) each day, not from D set size
 - **Transmission bound**: Final probability is clamped to [0.0, 0.99]
-- **Intervention isolation**: The scheduler only fires events from the selected scenario; no hidden hardcoded interventions apply
+- **Intervention isolation**: The scheduler only fires events from the selected scenario; no hardcoded interventions run in the background
+- **Intervention param names**: All preset scenario params match the exact keyword arguments of the corresponding `_apply_*` methods (e.g. `social_distancing` uses `reduction`, not `effectiveness`)
+- **Thread-pool execution**: `run_simulation` is a plain `def`, not `async def`, so FastAPI runs it in a thread pool — the event loop remains free to handle health checks and status polls during a long simulation
 - **Waning immunity**: Exponential decay after `waning_start` days for both natural (R) and vaccine (V) immunity
 - **Vaccinated nodes**: State V nodes have reduced susceptibility via immunity factor and cannot be re-infected through the normal S-check in `_transmission_step`
