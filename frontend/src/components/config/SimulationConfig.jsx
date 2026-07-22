@@ -51,6 +51,7 @@ function toCustomDiseaseParams(builderParams) {
     return {
         name: 'Custom disease',
         r0: builderParams.r0,
+        transmission_scale: builderParams.base_transmission_rate,
         mortality_rate: builderParams.mortality_rate,
         hospitalization_rate: builderParams.hospitalization_rate,
         incubation_mean: builderParams.incubation_period,

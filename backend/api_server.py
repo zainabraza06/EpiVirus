@@ -81,6 +81,7 @@ class CustomDiseaseParams(BaseModel):
     """Optional overrides from the custom disease builder."""
     name: Optional[str] = None
     r0: Optional[float] = Field(None, ge=0, le=20)
+    transmission_scale: Optional[float] = Field(None, gt=0, le=1)
     mortality_rate: Optional[float] = Field(None, ge=0, le=1)
     hospitalization_rate: Optional[float] = Field(None, ge=0, le=1)
     incubation_mean: Optional[float] = Field(None, ge=1, le=30)
@@ -170,6 +171,8 @@ def get_disease_params(config: DiseaseConfig) -> DiseaseParameters:
             disease.name = custom.name
         if custom.r0 is not None:
             disease.R0 = custom.r0
+        if custom.transmission_scale is not None:
+            disease.transmission_scale = custom.transmission_scale
         if custom.mortality_rate is not None:
             disease.mortality_rate = custom.mortality_rate
         if custom.hospitalization_rate is not None:

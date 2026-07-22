@@ -9,7 +9,8 @@ import sys
 
 import numpy as np
 
-from api_server import (SimulationConfig, active_simulations, build_detailed_data,
+from api_server import (CustomDiseaseParams, NetworkConfig, SimulationConfig,
+                        active_simulations, build_detailed_data,
                         build_intervention_schedule, build_network_snapshot,
                         get_disease_params, run_simulation)
 from disease_models import DiseaseLibrary, DiseaseProgression
@@ -275,6 +276,106 @@ def test_full_api_pipeline():
     check("network_snapshot" in sim, "a 3D network snapshot is produced")
 
 
+def test_every_frontend_control_reaches_the_backend():
+    """No control in the UI may be decorative.
+
+    Each of these was a real defect: sliders that changed nothing because the
+    field name never reached a request model or an engine handler.
+    """
+    print("\nFrontend/backend contract")
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    fe = root / "frontend" / "src" / "components" / "config"
+    if not fe.exists():
+        print("  SKIP  frontend sources not present")
+        return
+
+    config_jsx = (fe / "SimulationConfig.jsx").read_text(encoding="utf-8")
+    disease_jsx = (fe / "CustomDiseaseBuilder.jsx").read_text(encoding="utf-8")
+    network_jsx = (fe / "AdvancedNetworkConfig.jsx").read_text(encoding="utf-8")
+    interventions_jsx = (fe / "AdvancedInterventionBuilder.jsx").read_text(encoding="utf-8")
+
+    # 1. Every disease-builder slider is mapped onto a request field
+    sliders = set(re.findall(r"handleChange\('(\w+)'", disease_jsx))
+    mapper = config_jsx[config_jsx.index("function toCustomDiseaseParams"):
+                        config_jsx.index("export default function")]
+    mapped = set(re.findall(r"builderParams\.(\w+)", mapper))
+    check(sliders <= mapped,
+          f"every custom-disease slider is sent to the API (orphaned: {sorted(sliders - mapped)})")
+
+    # 2. Every field the mapper produces is accepted by CustomDiseaseParams
+    produced = set(re.findall(r"^\s+(\w+): builderParams", mapper, re.M))
+    accepted = set(CustomDiseaseParams.model_fields)
+    check(produced <= accepted,
+          f"every mapped disease field is a real request field (unknown: {sorted(produced - accepted)})")
+
+    # 3. Every advanced-network control is a real NetworkConfig field
+    network_controls = set(re.findall(r"key: '(\w+)'", network_jsx))
+    check(network_controls <= set(NetworkConfig.model_fields),
+          "every advanced-network control is a NetworkConfig field "
+          f"(unknown: {sorted(network_controls - set(NetworkConfig.model_fields))})")
+
+    # 4. Every intervention the UI offers has an engine handler, and every
+    #    parameter it sends is a real keyword argument of that handler
+    import inspect
+    from simulator_engine import UltimateSimulator
+
+    types_block = interventions_jsx[interventions_jsx.index("const interventionTypes"):
+                                    interventions_jsx.index("const addIntervention")]
+    ui_types = set(re.findall(r"^\s+(\w+): \{ label", types_block, re.M))
+
+    simulator = UltimateSimulator.__new__(UltimateSimulator)
+    handler_names = dict(re.findall(r"'(\w+)': self\.(_apply_\w+),",
+                                    inspect.getsource(UltimateSimulator.apply_intervention)))
+    check(ui_types <= set(handler_names),
+          f"every UI intervention has a handler (missing: {sorted(ui_types - set(handler_names))})")
+
+    defaults_block = interventions_jsx[interventions_jsx.index("function getDefaultParams"):]
+    for ui_type in sorted(ui_types):
+        match = re.search(rf"{ui_type}: \{{([^}}]*)\}}", defaults_block)
+        if not match or ui_type not in handler_names:
+            continue
+        sent = set(re.findall(r"(\w+):", match.group(1)))
+        accepted_args = set(
+            inspect.signature(getattr(UltimateSimulator, handler_names[ui_type])).parameters
+        ) - {"self"}
+        check(sent <= accepted_args,
+              f"{ui_type} sends only parameters its handler accepts "
+              f"(unknown: {sorted(sent - accepted_args)})")
+
+    # 5. Every vaccination priority the UI offers changes the dose order
+    priorities = set(re.findall(r'<option value="(\w+)">', interventions_jsx))
+    vaccination_source = inspect.getsource(UltimateSimulator._vaccinate_daily)
+    known = set(re.findall(r"'(\w+)'", vaccination_source))
+    unhandled = {p for p in priorities if p not in known and p != "random"}
+    check(not unhandled,
+          f"every vaccination priority is handled by the engine (unhandled: {sorted(unhandled)})")
+
+
+def test_transmission_scale_changes_transmission():
+    print("\nTransmission scale")
+    from disease_models import DiseaseParameters, TransmissionCalculator
+
+    generator = UltimateNetworkGenerator(population=120)
+    G = generator.erdos_renyi(p=0.05)
+    u, v = list(G.edges())[0]
+
+    probabilities = []
+    for scale in (0.02, 0.2):
+        disease = DiseaseParameters(transmission_scale=scale)
+        probabilities.append(
+            TransmissionCalculator.calculate_transmission_probability(
+                infector=u, susceptible=v, G=G, disease=disease, interventions={}, current_day=0
+            )
+        )
+
+    check(probabilities[1] > probabilities[0],
+          f"a higher transmission scale raises the per-contact probability "
+          f"({probabilities[0]:.4f} -> {probabilities[1]:.4f})")
+
+
 def main():
     tests = [
         test_population_is_conserved,
@@ -290,6 +391,8 @@ def main():
         test_severity_probabilities_are_normalised,
         test_custom_interventions_reach_the_schedule,
         test_network_snapshot_tracks_real_nodes,
+        test_transmission_scale_changes_transmission,
+        test_every_frontend_control_reaches_the_backend,
         test_full_api_pipeline,
     ]
 

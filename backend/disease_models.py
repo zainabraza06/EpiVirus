@@ -31,6 +31,11 @@ class DiseaseParameters:
     name: str = "COVID-19"
     R0: float = 2.5                         # Basic reproduction number
     generation_time: float = 5.2            # Mean time between infections
+
+    # Per-contact transmission scaling. R0 sets how infectious the disease is
+    # in the abstract; this converts it into a per-contact probability for the
+    # network at hand, and is what the "transmission rate (beta)" control sets.
+    transmission_scale: float = 0.08
     
     # Incubation and infectious periods (days)
     incubation_period: Dict[str, float] = field(default_factory=lambda: {'mean': 5.2, 'std': 2.8})
@@ -86,6 +91,7 @@ class DiseaseParameters:
         take down the simulation with a 500.
         """
         self.R0 = float(np.clip(self.R0, 0.0, 20.0))
+        self.transmission_scale = float(np.clip(self.transmission_scale, 0.0, 1.0))
         self.mortality_rate = float(np.clip(self.mortality_rate, 0.0, 1.0))
         self.hospitalization_rate = float(np.clip(self.hospitalization_rate, 0.0, 1.0))
 
@@ -324,8 +330,8 @@ class TransmissionCalculator:
         # Average degree adjustment
         avg_degree = (infector_degree + susceptible_degree) / 2
         degree_factor = 2.0 / (avg_degree + 2)  # Normalize
-        
-        return disease.R0 * degree_factor * 0.08  # Scaling factor
+
+        return disease.R0 * degree_factor * disease.transmission_scale
     
     @staticmethod
     def _age_susceptibility(age, disease):
