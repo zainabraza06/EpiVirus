@@ -1,9 +1,12 @@
 # network_generator.py
+import logging
+import random
+
 import networkx as nx
 import numpy as np
-import pandas as pd
-import random
 from typing import Optional, Dict, List
+
+logger = logging.getLogger(__name__)
 
 class UltimateNetworkGenerator:
    
@@ -19,8 +22,9 @@ class UltimateNetworkGenerator:
     # LOAD REAL DATA
     def load_dataset(self, csv_path: str):
         """Load Kaggle dataset for nodes and edges"""
+        import pandas as pd  # optional dependency, only needed for CSV-backed networks
         self.real_data = pd.read_csv(csv_path)
-        print(f" Loaded dataset with {len(self.real_data)} rows")
+        logger.info(f" Loaded dataset with {len(self.real_data)} rows")
     
     # BASE NETWORK MODELS
     def erdos_renyi(self, p=0.01):
@@ -44,13 +48,14 @@ class UltimateNetworkGenerator:
         self._add_edge_attributes(G)
         return G
     
-    def stochastic_block(self, community_sizes=None, intra_prob=0.15, inter_prob=0.01):
+    def stochastic_block(self, community_sizes=None, intra_prob=0.15, inter_prob=0.01,
+                         n_blocks=4):
         """Community-structured network"""
         if community_sizes is None:
-            # Default: 4 communities of equal size
-            community_sizes = [self.population // 4] * 4
+            n_blocks = max(2, min(int(n_blocks), max(2, self.population // 10)))
+            community_sizes = [self.population // n_blocks] * n_blocks
             community_sizes[-1] = self.population - sum(community_sizes[:-1])
-        
+
         # Create probability matrix
         n_communities = len(community_sizes)
         prob_matrix = [[intra_prob if i==j else inter_prob for j in range(n_communities)] 
@@ -66,11 +71,11 @@ class UltimateNetworkGenerator:
         """
         Combine multiple network layers for realistic social structure
         """
-        print(" Building hybrid multilayer network...")
+        logger.info(" Building hybrid multilayer network...")
         
         # 1. Start with small-world base network
         G = nx.watts_strogatz_graph(n=self.population, k=6, p=0.2)
-        print(f"   Base network: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+        logger.info(f"   Base network: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
         
         # 2. Add attributes FIRST 
         self._add_attributes(G)
@@ -93,78 +98,66 @@ class UltimateNetworkGenerator:
         # 8. Add edge attributes
         self._add_edge_attributes(G)
         
-        print(f"   Final network: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
-        print("   Layers: Households, Workplaces, Schools, Hubs, Random")
+        logger.info(f"   Final network: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+        logger.info("   Layers: Households, Workplaces, Schools, Hubs, Random")
         return G
     
     def _add_households(self, G):
-        """Add household connections (strongest ties)"""
-        print("   Adding households...")
-        
-        # Create households based on age
-        nodes_by_age = {}
-        for node in G.nodes():
-            age = G.nodes[node]['age']
-            age_group = age // 10  # Group by decade
-            if age_group not in nodes_by_age:
-                nodes_by_age[age_group] = []
-            nodes_by_age[age_group].append(node)
-        
-        # Create mixed-age households (families)
-        n_households = self.population // 3  # Average 3 people per household
+        """Assign every person to exactly one household and connect its members.
+
+        Adults and children are drawn from pre-partitioned pools, so households
+        are disjoint and the whole pass is linear in the population. Building
+        the candidate lists inside the loop instead made this O(N^2) and let the
+        same person belong to arbitrarily many households.
+        """
+        logger.info("Adding households...")
+
+        adults = [n for n in G.nodes() if 20 <= G.nodes[n]['age'] <= 65]
+        children = [n for n in G.nodes() if G.nodes[n]['age'] < 20]
+        others = [n for n in G.nodes() if G.nodes[n]['age'] > 65]
+
+        random.shuffle(adults)
+        random.shuffle(children)
+        random.shuffle(others)
+
         household_id = 0
-        
-        for _ in range(n_households):
-            # Family composition: typically 2 adults, 1-3 children
-            household_size = random.choices([1, 2, 3, 4, 5], weights=[0.1, 0.25, 0.35, 0.2, 0.1])[0]
-            household_members = []
-            
-            # Add adults (age 20-65)
-            n_adults = min(2, household_size)
-            adult_nodes = []
-            for node in G.nodes():
-                if 20 <= G.nodes[node]['age'] <= 65 and node not in household_members:
-                    adult_nodes.append(node)
-            if adult_nodes:
-                household_members.extend(random.sample(adult_nodes, min(n_adults, len(adult_nodes))))
-            
-            # Add children (age 0-19)
-            n_children = household_size - len(household_members)
-            child_nodes = []
-            for node in G.nodes():
-                if G.nodes[node]['age'] < 20 and node not in household_members:
-                    child_nodes.append(node)
-            if child_nodes and n_children > 0:
-                household_members.extend(random.sample(child_nodes, min(n_children, len(child_nodes))))
-            
-            # Fill remaining slots with random nodes
-            while len(household_members) < household_size:
-                available = [n for n in G.nodes() if n not in household_members]
-                if available:
-                    household_members.append(random.choice(available))
-            
-            # Connect all household members
-            for i in range(len(household_members)):
-                for j in range(i + 1, len(household_members)):
-                    node_i, node_j = household_members[i], household_members[j]
-                    
-                    # Add or strengthen edge
-                    if G.has_edge(node_i, node_j):
-                        G[node_i][node_j]['weight'] = max(3.0, G[node_i][node_j].get('weight', 1.0))
+        while adults or children or others:
+            size = random.choices([1, 2, 3, 4, 5], weights=[0.1, 0.25, 0.35, 0.2, 0.1])[0]
+            members = []
+
+            # Up to two adults per household, then children, then anyone left
+            for _ in range(min(2, size)):
+                if adults:
+                    members.append(adults.pop())
+            while len(members) < size and children:
+                members.append(children.pop())
+            while len(members) < size and others:
+                members.append(others.pop())
+            while len(members) < size and adults:
+                members.append(adults.pop())
+
+            if not members:
+                break
+
+            for node in members:
+                G.nodes[node]['household'] = household_id
+
+            for i in range(len(members)):
+                for j in range(i + 1, len(members)):
+                    u, v = members[i], members[j]
+                    if G.has_edge(u, v):
+                        G[u][v]['weight'] = max(3.0, G[u][v].get('weight', 1.0))
+                        G[u][v]['type'] = 'household'
                     else:
-                        G.add_edge(node_i, node_j, weight=3.0, type='household', active=True)
-                    
-                    # Set household ID
-                    G.nodes[node_i]['household'] = household_id
-                    G.nodes[node_j]['household'] = household_id
-            
+                        G.add_edge(u, v, weight=3.0, type='household', active=True)
+
             household_id += 1
-        
-        print(f"   Created {household_id} households")
+
+        logger.info("Created %d households", household_id)
     
     def _add_workplaces(self, G, connection_prob=0.6):
         """Add workplace connections"""
-        print("   Adding workplaces...")
+        logger.info("   Adding workplaces...")
         
         # Identify workers (age 20-65, not students)
         workers = []
@@ -174,7 +167,7 @@ class UltimateNetworkGenerator:
             if 20 <= age <= 65 and occupation in ['worker', 'essential']:
                 workers.append(node)
         
-        print(f"   Found {len(workers)} workers")
+        logger.info(f"   Found {len(workers)} workers")
         
         # Create workplaces
         n_workplaces = max(1, len(workers) // 30)  # Average 30 workers per workplace
@@ -206,11 +199,11 @@ class UltimateNetworkGenerator:
                         else:
                             G.add_edge(node_i, node_j, weight=1.5, type='workplace', active=True)
         
-        print(f"   Created {n_workplaces} workplaces")
+        logger.info(f"   Created {n_workplaces} workplaces")
     
     def _add_schools(self, G, connection_prob=0.8):
         """Add school connections"""
-        print("   Adding schools...")
+        logger.info("   Adding schools...")
         
         # Identify school-age children (5-18)
         students = []
@@ -218,7 +211,7 @@ class UltimateNetworkGenerator:
             if 5 <= G.nodes[node]['age'] <= 18:
                 students.append(node)
         
-        print(f"   Found {len(students)} students")
+        logger.info(f"   Found {len(students)} students")
         
         if not students:
             return
@@ -252,14 +245,14 @@ class UltimateNetworkGenerator:
                         else:
                             G.add_edge(node_i, node_j, weight=2.5, type='school', active=True)
         
-        print(f"   Created {n_schools} schools")
+        logger.info(f"   Created {n_schools} schools")
     
     def _add_hubs(self, G, n_hubs=None):
         """Add hub nodes (super-spreaders)"""
         if n_hubs is None:
             n_hubs = max(5, self.population // 100)  # 1% of population
         
-        print(f"   Adding {n_hubs} hub nodes...")
+        logger.info(f"   Adding {n_hubs} hub nodes...")
         
         # Select hubs (prefer high-mobility, essential workers)
         potential_hubs = []
@@ -271,28 +264,36 @@ class UltimateNetworkGenerator:
         
         potential_hubs.sort(key=lambda x: x[1], reverse=True)
         hubs = [node for node, _ in potential_hubs[:n_hubs]]
-        
-        # Add extra connections for hubs
+
+        # Materialise the node list once; rebuilding it per connection made
+        # hub creation O(hubs x connections x N).
+        all_nodes = list(G.nodes())
+
         for hub in hubs:
-            # Mark as hub
             G.nodes[hub]['hub'] = True
-            
-            # Add connections to random nodes
-            n_extra_connections = random.randint(20, 50)
+
+            # Scale hub degree with population so small networks are not
+            # turned into one giant clique by a handful of super-spreaders.
+            n_extra_connections = min(
+                random.randint(20, 50),
+                max(5, self.population // 20)
+            )
             for _ in range(n_extra_connections):
-                target = random.choice(list(G.nodes()))
-                if target != hub and not G.has_edge(hub, target):
-                    G.add_edge(hub, target, weight=2.0, type='hub', active=True)
-                elif G.has_edge(hub, target):
+                target = random.choice(all_nodes)
+                if target == hub:
+                    continue
+                if G.has_edge(hub, target):
                     G[hub][target]['weight'] = max(2.0, G[hub][target].get('weight', 1.0))
                     if 'hub' not in G[hub][target].get('type', ''):
                         G[hub][target]['type'] = G[hub][target].get('type', '') + ',hub'
-        
-        print(f"   Hubs added with extra connections")
+                else:
+                    G.add_edge(hub, target, weight=2.0, type='hub', active=True)
+
+        logger.info("Added %d hub nodes with extra connections", len(hubs))
     
     def _add_random_connections(self, G, connection_prob=0.4):
         """Add random long-distance connections"""
-        print("   Adding random connections...")
+        logger.info("   Adding random connections...")
         
         n_random_edges = int(connection_prob * self.population)
         
@@ -317,7 +318,7 @@ class UltimateNetworkGenerator:
     #  ATTRIBUTE GENERATION 
     def _add_attributes(self, G):
         """Add realistic demographic and disease-related attributes"""
-        print("   Adding node attributes...")
+        logger.info("   Adding node attributes...")
         
         # Generate synthetic demographic data
         ages = self._generate_age_distribution()
@@ -360,7 +361,7 @@ class UltimateNetworkGenerator:
             G.nodes[node]['x'] = random.random()
             G.nodes[node]['y'] = random.random()
         
-        print(f"   Attributes added to {G.number_of_nodes()} nodes")
+        logger.info(f"   Attributes added to {G.number_of_nodes()} nodes")
     
     def _generate_age_distribution(self):
         """Generate realistic age distribution"""
@@ -504,21 +505,21 @@ class UltimateNetworkGenerator:
     #  ANALYSIS METHODS 
     def analyze_network(self, G):
         """Print network statistics"""
-        print("\n📊 NETWORK ANALYSIS:")
-        print(f"   Nodes: {G.number_of_nodes()}")
-        print(f"   Edges: {G.number_of_edges()}")
-        print(f"   Density: {nx.density(G):.4f}")
-        print(f"   Average degree: {np.mean([d for n, d in G.degree()]):.2f}")
+        logger.info("\n📊 NETWORK ANALYSIS:")
+        logger.info(f"   Nodes: {G.number_of_nodes()}")
+        logger.info(f"   Edges: {G.number_of_edges()}")
+        logger.info(f"   Density: {nx.density(G):.4f}")
+        logger.info(f"   Average degree: {np.mean([d for n, d in G.degree()]):.2f}")
         
         # Degree distribution
         degrees = [d for n, d in G.degree()]
-        print(f"   Max degree: {max(degrees)}")
-        print(f"   Min degree: {min(degrees)}")
+        logger.info(f"   Max degree: {max(degrees)}")
+        logger.info(f"   Min degree: {min(degrees)}")
         
         # Connected components
         components = list(nx.connected_components(G))
-        print(f"   Connected components: {len(components)}")
-        print(f"   Largest component: {max(len(c) for c in components)} nodes")
+        logger.info(f"   Connected components: {len(components)}")
+        logger.info(f"   Largest component: {max(len(c) for c in components)} nodes")
         
         # Edge types
         edge_types = {}
@@ -528,9 +529,9 @@ class UltimateNetworkGenerator:
                 edge_types[edge_type] = 0
             edge_types[edge_type] += 1
         
-        print("\n   Edge types:")
+        logger.info("\n   Edge types:")
         for edge_type, count in sorted(edge_types.items(), key=lambda x: x[1], reverse=True):
-            print(f"     {edge_type}: {count} edges ({count/G.number_of_edges()*100:.1f}%)")
+            logger.info(f"     {edge_type}: {count} edges ({count/G.number_of_edges()*100:.1f}%)")
         
         return {
             'nodes': G.number_of_nodes(),
@@ -544,22 +545,22 @@ class UltimateNetworkGenerator:
 
 #  QUICK TEST 
 if __name__ == "__main__":
-    print("🧪 Testing Network Generator...")
+    logger.info("🧪 Testing Network Generator...")
     
     # Create generator
     generator = UltimateNetworkGenerator(population=500)
     
     # Test different network types
-    print("\n1. Testing Erdős–Rényi network:")
+    logger.info("\n1. Testing Erdős–Rényi network:")
     G_er = generator.erdos_renyi(p=0.02)
     generator.analyze_network(G_er)
     
-    print("\n2. Testing Hybrid Multilayer network:")
+    logger.info("\n2. Testing Hybrid Multilayer network:")
     G_hybrid = generator.hybrid_multilayer()
     generator.analyze_network(G_hybrid)
     
-    print("\n3. Testing Watts-Strogatz network:")
+    logger.info("\n3. Testing Watts-Strogatz network:")
     G_ws = generator.watts_strogatz(k=6, p=0.3)
     generator.analyze_network(G_ws)
     
-    print("\n✅ Network Generator Test Complete!")
+    logger.info("\n✅ Network Generator Test Complete!")

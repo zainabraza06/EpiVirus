@@ -1,12 +1,13 @@
 # disease_models.py
-import numpy as np
-from enum import Enum
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
+import logging
 import random
-from datetime import datetime, timedelta
-import json
-import networkx as nx  # Added missing import
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
 
 class DiseaseState(Enum):
     """All possible disease states for individuals"""
@@ -78,12 +79,33 @@ class DiseaseParameters:
     seasonality_peak: int = 0              # Day of year when transmission peaks
     
     def __post_init__(self):
-        """Validate parameters after initialization"""
-        assert 0 <= self.R0 <= 20, "R0 must be between 0 and 20"
-        assert 0 <= self.p_asymptomatic <= 1
-        total_prob = self.p_asymptomatic + self.p_mild + self.p_severe + self.p_critical
-        assert abs(total_prob - 1.0) < 0.01, \
-               f"Severity probabilities must sum to 1 (got {total_prob:.3f})"
+        """Clamp and normalise parameters.
+
+        User-supplied custom diseases go through here, so out-of-range values
+        are corrected rather than raising - a slider combination should never
+        take down the simulation with a 500.
+        """
+        self.R0 = float(np.clip(self.R0, 0.0, 20.0))
+        self.mortality_rate = float(np.clip(self.mortality_rate, 0.0, 1.0))
+        self.hospitalization_rate = float(np.clip(self.hospitalization_rate, 0.0, 1.0))
+
+        for period in (self.incubation_period, self.infectious_period):
+            period['mean'] = max(1.0, float(period.get('mean', 5.0)))
+            period['std'] = max(0.1, float(period.get('std', 1.0)))
+
+        severities = [
+            max(0.0, float(self.p_asymptomatic)),
+            max(0.0, float(self.p_mild)),
+            max(0.0, float(self.p_severe)),
+            max(0.0, float(self.p_critical)),
+        ]
+        total = sum(severities)
+        if total <= 0:
+            severities = [0.4, 0.4, 0.15, 0.05]
+            total = 1.0
+
+        (self.p_asymptomatic, self.p_mild,
+         self.p_severe, self.p_critical) = [s / total for s in severities]
 
 class DiseaseLibrary:
     """Pre-configured diseases with realistic parameters from literature"""
@@ -340,74 +362,79 @@ class TransmissionCalculator:
     def _intervention_factor(infector, susceptible, G, interventions):
         """Factor for all active interventions"""
         factor = 1.0
-        
-        # Social distancing
+
+        # Social distancing. The key must match what the simulator writes in
+        # `_apply_social_distancing`, otherwise the slider silently does
+        # nothing and the default is used for every scenario.
         if interventions.get('social_distancing', False):
             compliance = interventions.get('distancing_compliance', 0.7)
-            effectiveness = interventions.get('distancing_effectiveness', 0.3)
-            
-            # Check if individuals comply
+            reduction = interventions.get('distancing_reduction', 0.3)
+
             inf_complies = random.random() < G.nodes[infector].get('compliance', 0.5)
             sus_complies = random.random() < G.nodes[susceptible].get('compliance', 0.5)
-            
-            if inf_complies and sus_complies:
-                factor *= (1 - effectiveness * compliance)
-        
-        # Lockdown/isolation
-        if G.nodes[infector].get('isolated', False) or G.nodes[susceptible].get('isolated', False):
+
+            if inf_complies or sus_complies:
+                # Distancing works if either party keeps their distance; it
+                # works better when both do.
+                effective = reduction * compliance
+                if not (inf_complies and sus_complies):
+                    effective *= 0.5
+                factor *= (1 - effective)
+
+        # Case isolation (detected cases and hospital patients). Isolated
+        # infectors are skipped outright in the transmission loop; this covers
+        # an isolated susceptible.
+        if G.nodes[susceptible].get('isolated', False):
             factor *= 0.1  # 90% reduction
-        
-        # Travel restrictions
+
+        # Travel restrictions on long-distance contacts
         if interventions.get('travel_restrictions', False):
-            edge_data = G.get_edge_data(infector, susceptible, {})
-            if edge_data.get('type') == 'random':  # Long-distance
+            edge_data = G.get_edge_data(infector, susceptible) or {}
+            if 'random' in str(edge_data.get('type', '')):
                 factor *= (1 - interventions.get('travel_reduction', 0.5))
-        
+
         return factor
-    
+
     @staticmethod
     def _mask_factor(infector, susceptible, G, interventions):
         """Mask effectiveness factor"""
         if not interventions.get('mask_mandate', False):
             return 1.0
-        
+
         mask_efficacy = interventions.get('mask_efficacy', 0.5)
-        
-        # Check if individuals wear masks
-        inf_mask = G.nodes[infector].get('wears_mask', 
-                                        random.random() < interventions.get('mask_compliance', 0.7))
-        sus_mask = G.nodes[susceptible].get('wears_mask', 
-                                           random.random() < interventions.get('mask_compliance', 0.7))
-        
+
+        inf_mask = G.nodes[infector].get('wears_mask', False)
+        sus_mask = G.nodes[susceptible].get('wears_mask', False)
+
         if inf_mask and sus_mask:
-            # Both wearing masks - bidirectional protection
+            # Source control plus wearer protection
             return (1 - mask_efficacy) * (1 - mask_efficacy * 0.7)
-        elif inf_mask or sus_mask:
-            # One wearing mask - partial protection
+        if inf_mask or sus_mask:
             return 1 - (mask_efficacy * 0.3)
-        else:
-            # No masks
-            return 1.0
-    
+        return 1.0
+
     @staticmethod
     def _immunity_factor(susceptible, G, disease):
-        """Factor from vaccination/natural immunity"""
-        immunity = G.nodes[susceptible]['immunity']
-        
-        # Check if vaccinated
-        if G.nodes[susceptible].get('vaccinated', False):
+        """Factor from vaccination / natural immunity."""
+        attrs = G.nodes[susceptible]
+        immunity = attrs.get('immunity', 0.0)
+
+        if attrs.get('vaccinated', False):
             vaccine_eff = disease.vaccine_efficacy['infection']
-            days_since_vax = G.nodes[susceptible].get('days_vaccinated', 0)
-            
-            # Account for waning immunity
-            if days_since_vax > disease.vaccine_efficacy['waning_start']:
-                waned_days = days_since_vax - disease.vaccine_efficacy['waning_start']
-                waning = 1 - (1 - disease.vaccine_efficacy['waning_rate']) ** waned_days
-                vaccine_eff *= (1 - waning)
-            
+            # `vaccination_day` is the attribute the simulator actually sets;
+            # reading a non-existent `days_vaccinated` made vaccine waning a
+            # no-op.
+            days_since_vax = max(0, attrs.get('days_in_state', 0))
+            waning_start = disease.vaccine_efficacy.get('waning_start', 120)
+
+            if days_since_vax > waning_start:
+                waned_days = days_since_vax - waning_start
+                waning_rate = disease.vaccine_efficacy.get('waning_rate', 0.003)
+                vaccine_eff *= max(0.0, 1 - waning_rate * waned_days)
+
             immunity = max(immunity, vaccine_eff)
-        
-        return 1 - immunity
+
+        return max(0.0, 1 - immunity)
     
     @staticmethod
     def _seasonality_factor(day, disease):
@@ -450,8 +477,15 @@ class TransmissionCalculator:
         else: return '80+'
 
 class DiseaseProgression:
-    """Handles individual disease progression through states - FIXED VERSION"""
-    
+    """Handles individual disease progression through states."""
+
+    # The age-stratified tables above are calibrated against a wildtype-like
+    # disease. Variant-level (or user-supplied) rates are applied as a ratio
+    # against these baselines, which is what makes the custom mortality and
+    # hospitalisation inputs actually change the outcome.
+    BASELINE_MORTALITY = 0.02
+    BASELINE_HOSPITALIZATION = 0.15
+
     @staticmethod
     def determine_initial_course(age, disease, vaccination_status=False):
         """
@@ -514,6 +548,11 @@ class DiseaseProgression:
         else:
             symptoms = 'critical'
         
+        # Scale the age-stratified baselines by this disease's own rates so
+        # variant selection and the custom-disease sliders take effect.
+        hosp_scale = disease.hospitalization_rate / DiseaseProgression.BASELINE_HOSPITALIZATION
+        mortality_scale = disease.mortality_rate / DiseaseProgression.BASELINE_MORTALITY
+
         # Set parameters based on symptoms
         if symptoms == 'asymptomatic':
             inc_mean = disease.incubation_period['mean'] * 0.8
@@ -522,16 +561,18 @@ class DiseaseProgression:
         elif symptoms == 'mild':
             inc_mean = disease.incubation_period['mean']
             inf_mean = disease.infectious_period['mean'] * 0.9
-            hospitalization_prob = 0.02 * age_params['hospitalization']  # Increased from 0.01
+            hospitalization_prob = 0.02 * age_params['hospitalization'] * hosp_scale
         elif symptoms == 'severe':
             inc_mean = disease.incubation_period['mean'] * 0.9
             inf_mean = disease.infectious_period['mean'] * 1.2
-            hospitalization_prob = 0.80 * age_params['hospitalization']  # Increased from 0.7
+            hospitalization_prob = 0.80 * age_params['hospitalization'] * hosp_scale
         else:  # critical
             inc_mean = disease.incubation_period['mean'] * 0.8
             inf_mean = disease.infectious_period['mean'] * 1.5
-            hospitalization_prob = 0.95 * age_params['hospitalization']  # Increased from 0.9
-        
+            hospitalization_prob = 0.95 * age_params['hospitalization'] * hosp_scale
+
+        hospitalization_prob = min(1.0, hospitalization_prob)
+
         # Sample actual days from distributions - ensure minimum values
         incubation_days = max(1, int(np.random.normal(
             inc_mean, disease.incubation_period['std']
@@ -552,10 +593,10 @@ class DiseaseProgression:
         will_die = False
         death_day = None
         
-        # Base mortality from age
-        base_mortality = age_params['mortality']
-        
-        # Adjust mortality based on symptoms - HIGHER RATES FOR REALISTIC SIMULATION
+        # Base mortality from age, scaled by this disease's own fatality rate
+        base_mortality = age_params['mortality'] * mortality_scale
+
+        # Adjust mortality based on symptoms
         if symptoms == 'asymptomatic':
             mortality_prob = base_mortality * 0.05  # Very low
         elif symptoms == 'mild':
@@ -564,7 +605,7 @@ class DiseaseProgression:
             mortality_prob = base_mortality * 2.5   # Moderate-high
         else:  # critical
             mortality_prob = base_mortality * 8.0   # Very high
-        
+
         # Apply vaccine protection
         if vaccination_status:
             ve_severity = disease.vaccine_efficacy['severity']
@@ -583,21 +624,15 @@ class DiseaseProgression:
                     infectious_days // 2, infectious_days
                 )
         
-        # Determine recovery day (if not fatal)
+        # Exactly one terminal outcome is scheduled per case.
         if will_die:
             recovery_day = None
+            if not death_day or death_day <= 0:
+                death_day = incubation_days + infectious_days
         else:
+            death_day = None
             recovery_day = incubation_days + infectious_days
-        
-        # DEBUG: Log for problematic cases
-        if will_die and (death_day is None or death_day <= 0):
-            print(f"⚠️  DEBUG: Node marked to die but death_day={death_day}, symptoms={symptoms}")
-            death_day = incubation_days + infectious_days  # Default fallback
-        
-        if recovery_day is None and not will_die:
-            print(f"⚠️  DEBUG: Node not marked to die but recovery_day=None, symptoms={symptoms}")
-            recovery_day = incubation_days + infectious_days  # Default fallback
-        
+
         return {
             'symptoms': symptoms,
             'incubation_days': incubation_days,
@@ -608,31 +643,38 @@ class DiseaseProgression:
             'death_day': death_day,
             'recovery_day': recovery_day  # This will be None if will_die is True
         }
+    # Natural immunity half-life is roughly a year once waning starts
+    NATURAL_WANING_START = 90
+    NATURAL_WANING_RATE = 0.0019  # per day, ~50% loss per year
+
     @staticmethod
     def update_immunity(node, G, disease, current_day):
-        """Update immunity levels (waning, boosting)"""
-        if 'immunity' not in G.nodes[node]:
-            G.nodes[node]['immunity'] = 0.0
-            
-        current_immunity = G.nodes[node]['immunity']
-        
-        # Natural immunity waning for recovered individuals
-        if G.nodes[node].get('state') == 'R':
-            days_recovered = G.nodes[node].get('days_in_state', 0)
-            # Immunity wanes slowly over time
-            waning_rate = 0.0005  # ~50% loss per year if no boosting
-            new_immunity = current_immunity * (1 - waning_rate) ** (days_recovered / 365)
-            G.nodes[node]['immunity'] = max(0.0, min(1.0, new_immunity))
-        
-        # Vaccine immunity waning
-        elif G.nodes[node].get('vaccinated', False):
-            vaccination_day = G.nodes[node].get('vaccination_day', current_day)
-            days_vaccinated = max(0, current_day - vaccination_day)
-            
-            if days_vaccinated > disease.vaccine_efficacy.get('waning_start', 120):
-                waned_days = days_vaccinated - disease.vaccine_efficacy['waning_start']
-                waning = disease.vaccine_efficacy.get('waning_rate', 0.003) * waned_days
-                G.nodes[node]['immunity'] = max(0.0, current_immunity - waning)
+        """Apply one day of immunity waning to a recovered or vaccinated node."""
+        attrs = G.nodes[node]
+        state = attrs.get('state')
+
+        if state not in ('R', 'V'):
+            return
+
+        immunity = attrs.get('immunity', 0.0)
+        if immunity <= 0.0:
+            return
+
+        if state == 'R':
+            days = attrs.get('days_in_state', 0)
+            start = DiseaseProgression.NATURAL_WANING_START
+            rate = DiseaseProgression.NATURAL_WANING_RATE
+        else:
+            vaccination_day = attrs.get('vaccination_day', current_day)
+            days = max(0, current_day - vaccination_day)
+            start = disease.vaccine_efficacy.get('waning_start', 120)
+            rate = disease.vaccine_efficacy.get('waning_rate', 0.003)
+
+        if days <= start:
+            return
+
+        # Exponential decay applied once per day after the waning start
+        attrs['immunity'] = max(0.0, min(1.0, immunity * (1 - rate)))
 class InterventionSchedule:
     """Manages timing and application of interventions"""
     
@@ -642,13 +684,13 @@ class InterventionSchedule:
     def add_intervention(self, day, intervention_type, **params):
         """Schedule an intervention to start on specific day"""
         self.scheduled_interventions.append({
-            'day': day,
+            'day': int(day),
             'type': intervention_type,
             'params': params
         })
         # Sort by day
         self.scheduled_interventions.sort(key=lambda x: x['day'])
-        print(f"📅 Scheduled {intervention_type} for day {day} with params: {params}")
+        logger.info("Scheduled %s for day %s with params %s", intervention_type, day, params)
     
     def get_interventions_for_day(self, day):
         """Get interventions scheduled for this day"""
@@ -690,73 +732,13 @@ class InterventionSchedule:
             ]
         }
         
-        if scenario_name in scenarios:
-            self.scheduled_interventions = []
-            for schedule_item in scenarios[scenario_name]:
-                if schedule_item:  # Check if not empty
-                    # Directly add the dictionary
-                    self.scheduled_interventions.append(schedule_item)
-                    print(f"📅 Added {schedule_item['type']} for day {schedule_item['day']}")
-            print(f"✅ Created '{scenario_name}' scenario with {len(self.scheduled_interventions)} interventions")
-        else:
-            raise ValueError(f"Unknown scenario: {scenario_name}")
-# ==================== QUICK TEST FUNCTION ====================
-def test_disease_models():
-    """Test the disease models module"""
-    print("🧪 Testing Disease Models Module...")
-    
-    # Test disease library
-    covid = DiseaseLibrary.covid19_variant("omicron")
-    flu = DiseaseLibrary.influenza()
-    
-    print(f"\n📊 Disease Parameters:")
-    print(f"COVID-19 Omicron: R0={covid.R0}, Mortality={covid.mortality_rate}")
-    print(f"Influenza: R0={flu.R0}, Seasonality={flu.seasonality_amplitude}")
-    
-    # Test that probabilities sum to 1
-    print(f"\n✅ Probability Validation:")
-    for variant in ["wildtype", "alpha", "delta", "omicron"]:
-        disease = DiseaseLibrary.covid19_variant(variant)
-        total = disease.p_asymptomatic + disease.p_mild + disease.p_severe + disease.p_critical
-        print(f"{disease.name}: {total:.3f} (asymptomatic={disease.p_asymptomatic:.2f}, "
-              f"mild={disease.p_mild:.2f}, severe={disease.p_severe:.2f}, critical={disease.p_critical:.2f})")
-    
-    # Test transmission calculator
-    print(f"\n🎯 Transmission Calculator Test:")
-    
-    # Create a simple test network
-    G = nx.erdos_renyi_graph(10, 0.3)
-    for node in G.nodes():
-        G.nodes[node]['age'] = np.random.randint(0, 80)
-        G.nodes[node]['mobility'] = np.random.random()
-        G.nodes[node]['immunity'] = 0.0
-    
-    # Calculate transmission probability
-    prob = TransmissionCalculator.calculate_transmission_probability(
-        infector=0,
-        susceptible=1,
-        G=G,
-        disease=covid,
-        interventions={'mask_mandate': True, 'mask_efficacy': 0.5},
-        current_day=100
-    )
-    
-    print(f"Transmission probability: {prob:.3f}")
-    
-    # Test disease progression
-    print(f"\n🔄 Disease Progression Test:")
-    progression = DiseaseProgression.determine_initial_course(
-        age=45,
-        disease=covid,
-        vaccination_status=False
-    )
-    
-    print(f"Symptoms: {progression['symptoms']}")
-    print(f"Incubation: {progression['incubation_days']} days")
-    print(f"Infectious: {progression['infectious_days']} days")
-    print(f"Hospitalization: {progression['will_hospitalize']}")
-    
-    print("\n✅ Disease Models Module Test Complete!")
+        if scenario_name not in scenarios:
+            # An unrecognised scenario falls back to no interventions rather
+            # than failing the whole simulation run.
+            logger.warning("Unknown scenario '%s'; running with no interventions", scenario_name)
+            scenario_name = 'no_intervention'
 
-if __name__ == "__main__":
-    test_disease_models()
+        self.scheduled_interventions = [dict(item) for item in scenarios[scenario_name]]
+        logger.info("Created '%s' scenario with %d interventions",
+                    scenario_name, len(self.scheduled_interventions))
+        return self.scheduled_interventions
