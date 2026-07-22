@@ -72,8 +72,13 @@ class UltimateSimulator:
 
         self._cache_neighbors = {}
 
-        # Per-day node state snapshots, used by the 3D network view
+        # Node state snapshots for the 3D network view, as (day, states) pairs
+        # where states is one character per node in graph order. Recording only
+        # every `frame_interval` days, and as a string rather than a list of
+        # per-node strings, keeps a long run over a large population from
+        # holding tens of megabytes of frames it will never ship.
         self.state_frames = []
+        self.frame_interval = 1
 
         self.visualization_data = {
             'node_positions': None,
@@ -685,7 +690,11 @@ class UltimateSimulator:
 
     def _record_state_frame(self):
         """Store the per-node state for this day (used by the 3D network view)."""
-        self.state_frames.append([self.G.nodes[n]['state'] for n in self.G.nodes()])
+        if self.time % self.frame_interval:
+            return
+        self.state_frames.append(
+            (self.time, ''.join(self.G.nodes[n]['state'] for n in self.G.nodes()))
+        )
 
     def _update_statistics(self):
         current_infectious = len(self.state_sets['I'])

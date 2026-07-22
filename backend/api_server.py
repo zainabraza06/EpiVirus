@@ -307,24 +307,19 @@ def build_network_snapshot(simulator: UltimateSimulator) -> Dict[str, Any]:
         for u, v in subgraph.edges()
     ][:VIS_MAX_EDGES]
 
-    # Downsample the timeline so playback stays smooth on long simulations
-    total_frames = len(simulator.state_frames)
-    stride = max(1, total_frames // VIS_MAX_FRAMES) if total_frames else 1
-    frame_indices = list(range(0, total_frames, stride))
-
-    frames = []
-    for frame_idx in frame_indices:
-        day_states = simulator.state_frames[frame_idx]
-        frames.append("".join(
-            day_states[index_of_node[node]][0] for node in sampled_nodes
-        ))
+    # The simulator already records at the playback stride, so every stored
+    # frame is used here.
+    frames = [
+        "".join(day_states[index_of_node[node]] for node in sampled_nodes)
+        for _, day_states in simulator.state_frames
+    ]
 
     return {
         "nodes": node_payload,
         "edges": edges,
         # Each frame is a string with one character per node, in `nodes` order
         "frames": frames,
-        "frame_days": [simulator.history["time"][i] for i in frame_indices],
+        "frame_days": [day for day, _ in simulator.state_frames],
         "sampled": len(sampled_nodes) < len(all_nodes),
         "total_nodes": len(all_nodes),
         "total_edges": G.number_of_edges(),
@@ -452,6 +447,8 @@ def run_simulation(simulation_id: str, config: SimulationConfig):
         simulator.scheduled_interventions = build_intervention_schedule(config)
 
         total = config.simulation_days
+        # Only keep the frames the 3D view will actually play back
+        simulator.frame_interval = max(1, total // VIS_MAX_FRAMES)
         for day in range(total):
             simulator.step(1)
             _update(
