@@ -37,7 +37,12 @@ export default function SimulationResults({ results }) {
         {
             label: 'Final R effective',
             value: (summary.final_r_effective ?? 0).toFixed(2),
-            detail: (summary.final_r_effective ?? 0) > 1 ? 'still growing' : 'under control',
+            detail:
+                (summary.final_r_effective ?? 0) === 0
+                    ? 'no ongoing transmission'
+                    : (summary.final_r_effective ?? 0) > 1
+                        ? 'still growing'
+                        : 'shrinking',
             accent: STATE_COLORS.V,
         },
     ]

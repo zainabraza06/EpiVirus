@@ -61,6 +61,19 @@ const legendProps = {
     iconSize: 14,
 }
 
+// Recharts orders legend entries itself, which scrambles the compartments out
+// of their S -> E -> I -> R -> D -> V progression. Passing an explicit payload
+// keeps the legend reading in the order the disease actually moves through.
+const compartmentLegendPayload = (labels, type = 'plainline') =>
+    labels.map((label) => ({
+        value: label,
+        type,
+        id: label,
+        color: STATE_COLORS[
+            Object.keys(STATE_LABELS).find((key) => STATE_LABELS[key] === label)
+        ],
+    }))
+
 // ---------------------------------------------------------------------------
 // Shared shell
 // ---------------------------------------------------------------------------
@@ -130,7 +143,10 @@ export function SeirdDynamicsChart({ history }) {
                 <XAxis dataKey="day" {...axisProps} />
                 <YAxis {...axisProps} width={56} />
                 <Tooltip {...tooltipProps} />
-                <Legend {...legendProps} />
+                <Legend
+                    {...legendProps}
+                    payload={compartmentLegendPayload(Object.values(STATE_LABELS))}
+                />
                 {Object.entries(STATE_LABELS).map(([key, label]) => (
                     <Line
                         key={key}
@@ -183,7 +199,7 @@ export function PopulationCompositionChart({ history }) {
                 <XAxis dataKey="day" {...axisProps} />
                 <YAxis {...axisProps} width={56} />
                 <Tooltip {...tooltipProps} />
-                <Legend {...legendProps} iconType="square" />
+                <Legend {...legendProps} payload={compartmentLegendPayload(order, 'square')} />
                 {order.map((label) => (
                     <Area
                         key={label}
@@ -230,12 +246,25 @@ export function EpidemicCurveChart({ dailyNewCases, time }) {
             subtitle="New infections recorded each day"
             note={`Peak incidence on day ${peakDay}.`}
         >
-            <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+            {/* Extra top margin leaves room for the peak marker's label, which
+                was being clipped by the plot area. */}
+            <ComposedChart data={data} margin={{ top: 24, right: 16, bottom: 8, left: 0 }}>
                 <CartesianGrid stroke={GRID} vertical={false} />
                 <XAxis dataKey="day" {...axisProps} />
                 <YAxis {...axisProps} width={56} />
                 <Tooltip {...tooltipProps} />
                 <Legend {...legendProps} />
+                <ReferenceLine
+                    x={peakDay}
+                    stroke={TEXT_SECONDARY}
+                    strokeDasharray="4 4"
+                    label={{
+                        value: `Peak · day ${peakDay}`,
+                        fill: TEXT_SECONDARY,
+                        fontSize: 11,
+                        position: 'top',
+                    }}
+                />
                 <Bar dataKey="New cases" fill={STATE_COLORS.I} fillOpacity={0.55} radius={[4, 4, 0, 0]} />
                 <Line
                     type="monotone"
@@ -243,12 +272,6 @@ export function EpidemicCurveChart({ dailyNewCases, time }) {
                     stroke={STATE_COLORS.I}
                     strokeWidth={2}
                     dot={false}
-                />
-                <ReferenceLine
-                    x={peakDay}
-                    stroke={TEXT_SECONDARY}
-                    strokeDasharray="4 4"
-                    label={{ value: `Peak · day ${peakDay}`, fill: TEXT_SECONDARY, fontSize: 11, position: 'top' }}
                 />
             </ComposedChart>
         </ChartCard>

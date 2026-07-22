@@ -6,7 +6,7 @@
 // from the population-level proportions, so individuals flickered between
 // recovered and susceptible at random.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
 
@@ -17,19 +17,11 @@ import { STATE_COLORS, STATE_LABELS, STATE_ORDER } from '../charts/chartTokens'
 // <mesh> per node made the scene unusable past a couple of hundred people.
 function NodeCloud({ nodes, states }) {
     const meshRef = useRef()
-    const pulseRef = useRef(0)
 
-    const { positions, colorArray } = useMemo(() => {
-        const positions = new Float32Array(nodes.length * 3)
-        nodes.forEach((node, i) => {
-            positions[i * 3] = node.x
-            positions[i * 3 + 1] = node.y
-            positions[i * 3 + 2] = node.z
-        })
-        return { positions, colorArray: new Float32Array(nodes.length * 3) }
-    }, [nodes])
-
-    // Re-apply the colours and per-node scale whenever the day changes
+    // Re-apply per-instance colour and scale whenever the day changes. Colours
+    // go through setColorAt (the instanceColor attribute); a per-vertex colour
+    // attribute on the geometry would be shared by every instance and leave
+    // every node the same shade.
     useEffect(() => {
         const mesh = meshRef.current
         if (!mesh || !states) return
@@ -39,38 +31,35 @@ function NodeCloud({ nodes, states }) {
 
         for (let i = 0; i < nodes.length; i++) {
             const state = states[i] || 'S'
-            color.set(STATE_COLORS[state] || '#9ca3af')
-            color.toArray(colorArray, i * 3)
 
             // Deceased shrink away; active infections stand out
-            const scale = state === 'D' ? 0.45 : state === 'I' ? 1.25 : 0.85
-            dummy.position.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
+            const scale = state === 'D' ? 0.5 : state === 'I' ? 1.5 : 0.9
+            dummy.position.set(nodes[i].x, nodes[i].y, nodes[i].z)
             dummy.scale.setScalar(scale)
             dummy.updateMatrix()
             mesh.setMatrixAt(i, dummy.matrix)
+
+            color.set(STATE_COLORS[state] || '#9ca3af')
+            mesh.setColorAt(i, color)
         }
 
         mesh.instanceMatrix.needsUpdate = true
-        if (mesh.geometry.attributes.color) {
-            mesh.geometry.attributes.color.needsUpdate = true
-        }
-    }, [states, nodes, positions, colorArray])
-
-    // Gentle breathing so a live epidemic reads as alive
-    useFrame((_, delta) => {
-        pulseRef.current += delta
-        if (meshRef.current) {
-            meshRef.current.material.emissiveIntensity =
-                0.25 + Math.sin(pulseRef.current * 2) * 0.1
-        }
-    })
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    }, [states, nodes])
 
     return (
-        <instancedMesh ref={meshRef} args={[undefined, undefined, nodes.length]}>
-            <sphereGeometry args={[0.42, 12, 12]}>
-                <instancedBufferAttribute attach="attributes-color" args={[colorArray, 3]} />
-            </sphereGeometry>
-            <meshStandardMaterial vertexColors emissive="#ffffff" emissiveIntensity={0.25} />
+        <instancedMesh
+            key={nodes.length}
+            ref={meshRef}
+            args={[undefined, undefined, nodes.length]}
+        >
+            <sphereGeometry args={[0.6, 14, 14]} />
+            {/* Lambert shading keeps each node's hue intact while still giving
+                the spheres some form. A white emissive term washed every node
+                out to grey, and tone mapping desaturates the palette, so both
+                are off - the colour on screen has to be the colour that means
+                "infectious". */}
+            <meshLambertMaterial toneMapped={false} />
         </instancedMesh>
     )
 }
@@ -214,16 +203,17 @@ export default function NetworkView({ simulationId, history }) {
                 <div className="w-full bg-gray-900 rounded-lg overflow-hidden border border-gray-700"
                      style={{ height: 520 }}>
                     <Canvas dpr={[1, 2]}>
-                        <PerspectiveCamera makeDefault position={[0, 0, 55]} />
+                        <PerspectiveCamera makeDefault position={[0, 0, 44]} fov={50} />
                         <OrbitControls
                             enableDamping
                             dampingFactor={0.08}
-                            minDistance={15}
+                            minDistance={12}
                             maxDistance={140}
                         />
-                        <ambientLight intensity={0.75} />
-                        <pointLight position={[30, 30, 30]} intensity={120} decay={2} />
-                        <pointLight position={[-30, -20, -20]} intensity={60} decay={2} />
+                        {/* Bright, flat-ish lighting so hue reads accurately */}
+                        <ambientLight intensity={1.6} />
+                        <directionalLight position={[40, 40, 60]} intensity={1.2} />
+                        <directionalLight position={[-40, -20, -40]} intensity={0.5} />
                         <EdgeLines nodes={network.nodes} edges={network.edges} />
                         <NodeCloud nodes={network.nodes} states={states} />
                     </Canvas>

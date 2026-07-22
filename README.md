@@ -1,6 +1,6 @@
 # EpiVirus — Pandemic Simulation Platform
 
-A full-stack, network-based epidemic simulation platform implementing the **SEIRD** compartmental model with age stratification, 5 network topologies, pharmaceutical and non-pharmaceutical interventions, and 30+ real-time charts rendered in the browser.
+A full-stack, network-based epidemic simulation platform implementing the **SEIRD** compartmental model with age stratification, 5 network topologies, pharmaceutical and non-pharmaceutical interventions, and an interactive chart suite rendered in the browser.
 
 ---
 
@@ -30,8 +30,8 @@ EpiVirus models how infectious diseases spread through a population represented 
 - 9-age-group stratification with realistic COVID-19 parameters
 - 5 network topologies (hybrid multilayer, Erdős-Rényi, Watts-Strogatz, Barabási-Albert, Stochastic Block)
 - 5 intervention scenarios with 9 intervention types and a custom intervention builder
-- 3D network visualization (Three.js / WebGL) with per-node color coding and animation playback
-- 30+ interactive charts (Recharts) covering SEIRD dynamics, healthcare burden, age distribution, R-effective trajectory
+- 3D network visualization (Three.js / WebGL) driven by the real contact network, with per-node state playback
+- 11 interactive charts (Recharts) covering SEIRD dynamics, healthcare burden, age and network structure, and the R-effective trajectory — each concept plotted once
 - REST API (FastAPI) with background simulation execution and live progress polling
 
 ---
@@ -43,7 +43,7 @@ EpiVirus models how infectious diseases spread through a population represented 
 |                       BROWSER (React SPA)                        |
 |                                                                  |
 |  +-----------------+  +------------------+  +----------------+  |
-|  | SimulationConfig|  |ComprehensiveCharts|  |   Network3D    |  |
+|  | SimulationConfig|  |  EpidemicCharts  |  |  NetworkView   |  |
 |  |  (form inputs)  |  |  (Recharts 2D)   |  |  (Three.js 3D) |  |
 |  +--------+--------+  +------------------+  +----------------+  |
 |           |                    ^                      ^          |
@@ -115,34 +115,30 @@ EpiVirus/
 │   ├── disease_models.py        # DiseaseParameters, TransmissionCalculator,
 │   │                            #   DiseaseProgression, InterventionSchedule
 │   ├── network_generator.py     # UltimateNetworkGenerator (5 topologies)
-│   ├── animation_simulator.py   # Frame-by-frame animation data
+│   ├── test_simulation.py       # Regression tests for the model invariants
 │   └── requirements.txt
 │
 ├── frontend/                    # React frontend
 │   ├── src/
-│   │   ├── App.jsx              # State hub, polling, result routing
+│   │   ├── App.jsx              # State hub, polling, tab routing
 │   │   ├── api.js               # apiUrl() helper — respects VITE_API_URL
 │   │   └── components/
-│   │       ├── ui/              # Layout primitives
-│   │       │   ├── Header.jsx
+│   │       ├── ui/
 │   │       │   └── LoadingSpinner.jsx
-│   │       ├── config/          # All simulation input forms
+│   │       ├── config/          # Simulation input forms
 │   │       │   ├── SimulationConfig.jsx
 │   │       │   ├── CustomDiseaseBuilder.jsx
 │   │       │   ├── AdvancedNetworkConfig.jsx
 │   │       │   └── AdvancedInterventionBuilder.jsx
-│   │       ├── charts/          # 2D data visualizations
-│   │       │   ├── ComprehensiveCharts.jsx
-│   │       │   ├── AdvancedCharts.jsx
-│   │       │   └── EpidemicChart.jsx
-│   │       ├── visualization/   # 3D and animation
-│   │       │   ├── Network3D.jsx
-│   │       │   └── AnimationTab.jsx
-│   │       └── results/         # Results display and summaries
-│   │           ├── SimulationResults.jsx
+│   │       ├── charts/
+│   │       │   ├── EpidemicCharts.jsx    # All 11 charts
+│   │       │   └── chartTokens.js        # Validated palette + labels
+│   │       ├── visualization/
+│   │       │   └── NetworkView.jsx       # 3D network with playback
+│   │       └── results/
+│   │           ├── SimulationResults.jsx # Headline stat tiles
 │   │           ├── OverviewTab.jsx
 │   │           └── NetworkInfo.jsx
-│   ├── .env.local               # VITE_API_URL (blank = same-domain Render)
 │   ├── vite.config.js           # Dev proxy /api -> localhost:8000
 │   └── package.json
 │
@@ -160,7 +156,7 @@ EpiVirus/
 | Frontend framework | React | 19.x | SPA, state, UI |
 | Build tool | Vite | 7.x | Bundling, dev proxy |
 | Styling | Tailwind CSS | 4.x | Utility classes |
-| 2D charts | Recharts | 3.6 | 30+ chart types |
+| 2D charts | Recharts | 3.6 | Chart suite |
 | 3D visualization | Three.js + @react-three/fiber | latest | WebGL network render |
 | API framework | FastAPI | 0.115 | REST API |
 | ASGI server | Uvicorn | 0.32 | HTTP server |
@@ -340,10 +336,10 @@ Frontend polls GET /api/simulation/{id}/status (every 2s)
               |
               v
         React distributes data to:
-          OverviewTab          <- summary cards, key metrics
-          ComprehensiveCharts  <- 30+ Recharts visualizations
-          Network3D            <- Three.js 3D node-link diagram
-          AnimationTab         <- frame-by-frame playback
+          Analysis tab   <- SimulationResults stat tiles + EpidemicCharts
+          Network tab    <- GET /api/simulation/{id}/network
+                            -> NetworkView (Three.js, real nodes + playback)
+          Results tab    <- full metric grid, daily table, CSV/JSON export
 ```
 
 ---
@@ -415,6 +411,28 @@ Key response fields:
 - `history` — per-day arrays for S, E, I, R, D, V, Ia, Im, Is, Ih, Ic, daily_deaths, daily_hospitalizations
 - `summary` — attack_rate, peak_infections, peak_day, total_deaths, CFR, total_vaccinated, total_hospitalized
 - `detailed_data` — daily_new_cases, severity_breakdown, age_distribution, degree_distribution, social_clustering, hospital_capacity, r_effective
+
+#### `GET /api/simulation/{id}/network`
+The sampled contact network for the 3D view: node positions, edge index pairs,
+and one frame string per day giving every sampled node's state. Requires
+`status == "completed"`.
+
+```json
+{
+  "nodes": [{ "id": 2, "x": -6.0, "y": 4.5, "z": 0.9, "age": 48, "degree": 26 }],
+  "edges": [[0, 14], [0, 92]],
+  "frames": ["SSSESSIS…", "SSEESSIR…"],
+  "frame_days": [0, 1, 2],
+  "sampled": true,
+  "total_nodes": 600
+}
+```
+
+Networks above 350 people are sampled (hubs plus a random draw) and timelines
+above 150 days are strided, so the payload stays small enough to animate.
+
+#### `GET /api/scenarios`
+Returns the available intervention scenarios.
 
 #### `GET /api/simulations`
 List all in-memory simulations.
@@ -560,17 +578,49 @@ A `render.yaml` file is included at the repo root. If you connect the repo to Re
 
 ---
 
-## Simulation Correctness Notes
+## Model Invariants
 
-The following correctness properties have been verified in the code:
+`backend/test_simulation.py` asserts these directly — run `python test_simulation.py`
+from the `backend/` directory.
 
-- **Probability normalization**: `p_asymptomatic + p_mild + p_severe + p_critical = 1.0` is asserted in `DiseaseParameters.__post_init__`
-- **Exclusive outcomes**: A node is scheduled for either `die` or `recover`, never both
-- **State set integrity**: Nodes are discarded from old state sets before being added to new ones
-- **Daily deaths tracking**: Computed as `total_deaths - previous_total_deaths` (delta) each day, not from D set size
-- **Transmission bound**: Final probability is clamped to [0.0, 0.99]
-- **Intervention isolation**: The scheduler only fires events from the selected scenario; no hardcoded interventions run in the background
-- **Intervention param names**: All preset scenario params match the exact keyword arguments of the corresponding `_apply_*` methods (e.g. `social_distancing` uses `reduction`, not `effectiveness`)
-- **Thread-pool execution**: `run_simulation` is a plain `def`, not `async def`, so FastAPI runs it in a thread pool — the event loop remains free to handle health checks and status polls during a long simulation
-- **Waning immunity**: Exponential decay after `waning_start` days for both natural (R) and vaccine (V) immunity
-- **Vaccinated nodes**: State V nodes have reduced susceptibility via immunity factor and cannot be re-infected through the normal S-check in `_transmission_step`
+**Compartments**
+- S, E, I, R, D and V are a strict partition: every person is in exactly one, and
+  the six always sum to the initial population. Transitions go through a single
+  helper that clears every other compartment first.
+- A node's `state` attribute is always one of S/E/I/R/D/V. Severity
+  (asymptomatic → critical) and hospitalisation live in separate subsets.
+- Deceased is terminal. Stale events targeting a dead node are dropped, and the
+  cumulative death count never decreases.
+- Each infection schedules exactly one terminal event — death or recovery.
+
+**Counting**
+- Daily new infections are counted from actual transmission events, so they are
+  never negative and sum to `total_infected`. Deriving them from compartment
+  deltas made recoveries and vaccinations look like case counts.
+- `daily_deaths` sums to `total_deaths`.
+- `r_effective` and `hospital_bed_usage` have exactly one value per simulated
+  day, so they line up with `history.time` on the charts.
+
+**Events**
+- The queue is a min-heap drained with `<=`, so an event whose day has already
+  passed still fires instead of blocking everything behind it.
+
+**Interventions**
+- Only the schedule built from the selected scenario plus the user's custom
+  interventions is ever applied; nothing fires at day 0 implicitly.
+- Lockdown records each person's pre-lockdown mobility and restores it exactly
+  when the lockdown ends or society reopens. It does not mark the population as
+  isolated — that flag is reserved for detected and hospitalised cases.
+- Vaccination and testing are daily campaigns, matching what their `rate`
+  parameters describe.
+- Preset scenario parameter names match the `_apply_*` keyword arguments.
+
+**Parameters**
+- Severity probabilities are normalised to sum to 1, and out-of-range values are
+  clamped, so no slider combination can fail a run.
+- Variant and custom mortality/hospitalisation rates scale the age-stratified
+  baselines, so changing them changes the outcome.
+
+**Execution**
+- `run_simulation` is a plain `def`, so FastAPI runs it in a thread pool and the
+  event loop stays free for status polls and health checks.

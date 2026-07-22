@@ -51,6 +51,7 @@ MAX_STORED_SIMULATIONS = 20
 VIS_MAX_NODES = 350
 VIS_MAX_EDGES = 1_200
 VIS_MAX_FRAMES = 150
+VIS_LAYOUT_RADIUS = 26.0
 
 # Simulations live in memory only. The lock guards against the background
 # worker and a status poll touching the dict at the same time.
@@ -275,17 +276,24 @@ def build_network_snapshot(simulator: UltimateSimulator) -> Dict[str, Any]:
         sampled_nodes = all_nodes
 
     subgraph = G.subgraph(sampled_nodes)
-    positions = nx.spring_layout(subgraph, dim=3, seed=42, iterations=30)
+    positions = nx.spring_layout(subgraph, dim=3, seed=42, iterations=50)
+
+    # Normalise the layout to a fixed radius so every topology fills the
+    # viewport the same way instead of collapsing into a dot in the middle.
+    coords = np.array([positions[node] for node in sampled_nodes], dtype=float)
+    if len(coords):
+        coords -= coords.mean(axis=0)
+        extent = float(np.abs(coords).max()) or 1.0
+        coords *= VIS_LAYOUT_RADIUS / extent
 
     index_of_node = {node: i for i, node in enumerate(all_nodes)}
     node_payload = []
-    for node in sampled_nodes:
-        pos = positions[node]
+    for i, node in enumerate(sampled_nodes):
         node_payload.append({
             "id": int(node),
-            "x": round(float(pos[0]) * 20, 3),
-            "y": round(float(pos[1]) * 20, 3),
-            "z": round(float(pos[2]) * 20, 3),
+            "x": round(float(coords[i][0]), 3),
+            "y": round(float(coords[i][1]), 3),
+            "z": round(float(coords[i][2]), 3),
             "age": int(G.nodes[node].get("age", 30)),
             "degree": int(G.degree(node)),
         })

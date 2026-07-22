@@ -1,6 +1,5 @@
 // src/App.jsx - EpiVirus frontend shell
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import './App.css'
 import { apiUrl } from './api'
 
 import LoadingSpinner from './components/ui/LoadingSpinner'

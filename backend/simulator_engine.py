@@ -725,8 +725,13 @@ class UltimateSimulator:
 
     def get_summary_stats(self):
         population = max(1, len(self.G))
-        r_series = [r for r in self.stats['r_effective'] if r > 0]
+
+        # The value on the final day, not the last non-zero one: filtering
+        # zeros out reported a long-dead epidemic's old growth rate, so a
+        # finished outbreak claimed it was still expanding.
+        r_series = self.stats['r_effective']
         final_r = r_series[-1] if r_series else 0.0
+        peak_r = max(r_series) if r_series else 0.0
 
         return {
             'total_days': self.time,
@@ -742,6 +747,7 @@ class UltimateSimulator:
             'attack_rate': self.stats['total_infected'] / population,
             'case_fatality_rate': self.stats['total_deaths'] / max(1, self.stats['total_infected']),
             'final_r_effective': final_r,
+            'peak_r_effective': peak_r,
         }
 
     def get_infection_tree(self, max_depth=3):

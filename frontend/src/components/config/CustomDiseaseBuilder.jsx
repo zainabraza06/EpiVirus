@@ -1,18 +1,28 @@
-// components/CustomDiseaseBuilder.jsx
-import { useState } from 'react'
+// components/config/CustomDiseaseBuilder.jsx
+import { useEffect, useRef, useState } from 'react'
+
+const DEFAULTS = {
+    base_transmission_rate: 0.05,
+    incubation_period: 5.0,
+    infectious_period: 7.0,
+    asymptomatic_rate: 0.3,
+    hospitalization_rate: 0.05,
+    icu_rate: 0.01,
+    mortality_rate: 0.01,
+    r0: 2.5,
+}
 
 export default function CustomDiseaseBuilder({ onParamsChange, initialParams = {} }) {
-    const [params, setParams] = useState({
-        base_transmission_rate: 0.05,
-        incubation_period: 5.0,
-        infectious_period: 7.0,
-        asymptomatic_rate: 0.3,
-        hospitalization_rate: 0.05,
-        icu_rate: 0.01,
-        mortality_rate: 0.01,
-        r0: 2.5,
-        ...initialParams
-    })
+    const [params, setParams] = useState({ ...DEFAULTS, ...initialParams })
+    const published = useRef(false)
+
+    // Publish the starting values once, so enabling the custom disease without
+    // touching a slider still sends a complete parameter set rather than null.
+    useEffect(() => {
+        if (published.current) return
+        published.current = true
+        onParamsChange(params)
+    }, [params, onParamsChange])
 
     const handleChange = (key, value) => {
         const newParams = { ...params, [key]: value }
