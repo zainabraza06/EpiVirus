@@ -70,6 +70,10 @@ class NetworkConfig(BaseModel):
     n_blocks: int = Field(4, ge=2, le=50)
     block_intra: float = Field(0.15, ge=0, le=1)
     block_inter: float = Field(0.01, ge=0, le=1)
+    # Hybrid multilayer tuning
+    workplace_p: float = Field(0.6, ge=0, le=1)
+    school_p: float = Field(0.8, ge=0, le=1)
+    community_p: float = Field(0.4, ge=0, le=5)
 
 
 class CustomDiseaseParams(BaseModel):
@@ -124,10 +128,16 @@ def generate_network(config: NetworkConfig):
     generator = UltimateNetworkGenerator(population=config.population)
 
     builders = {
-        "hybrid": lambda: generator.hybrid_multilayer(),
+        "hybrid": lambda: generator.hybrid_multilayer(
+            school_p=config.school_p,
+            workplace_p=config.workplace_p,
+            community_p=config.community_p,
+        ),
         "erdos_renyi": lambda: generator.erdos_renyi(p=config.erdos_p),
         "watts_strogatz": lambda: generator.watts_strogatz(
-            k=min(config.watts_k, max(2, config.population - 1)), p=config.watts_p
+            # networkx requires an even k strictly below the population
+            k=max(2, min(config.watts_k, config.population - 1) // 2 * 2),
+            p=config.watts_p,
         ),
         "barabasi_albert": lambda: generator.barabasi_albert(
             m=min(config.barabasi_m, max(1, config.population - 1))

@@ -195,3 +195,4 @@ site/
 *~
 *.bak
 *.backup
+backend/static/

@@ -391,8 +391,10 @@ class UltimateSimulator:
         if n_doses <= 0:
             return
 
-        if priority == 'age':
+        if priority in ('age', 'elderly'):
             candidates = sorted(susceptible, key=lambda n: self.G.nodes[n]['age'], reverse=True)
+        elif priority == 'young':
+            candidates = sorted(susceptible, key=lambda n: self.G.nodes[n]['age'])
         elif priority == 'frontline':
             candidates = sorted(susceptible,
                                 key=lambda n: self.G.nodes[n].get('mobility', 0.5), reverse=True)
